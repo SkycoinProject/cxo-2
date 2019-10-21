@@ -1,0 +1,47 @@
+{
+    "rootHash": {
+		"publisher":"pubKey1",
+		"signature":"signature1",
+		"sequence" : 1
+    },
+    "dataObject":{
+        "header":{
+            "publisher":"pubKey1", 
+            "sequence": 1,
+            "manifestHash": "some_manifest_hash",
+            "manifestSize": 5,
+            "dataHash": "some_data_hash",
+            "dataSize": 6,
+            "descriptor": "some description"
+        },
+        "manifest":{
+            "length": 5,
+            "hashes":[
+                {
+                    "index":1,
+                    "hash": "some_hash1",
+                    "size": 5,
+                    "recursiveSizeFirstLevel": 6,
+                    "recursiveSizeTotal": 7
+                },
+                {
+                    "index":2,
+                    "hash": "some_hash2",
+                    "size": 5,
+                    "recursiveSizeFirstLevel": 6,
+                    "recursiveSizeTotal": 7
+                }
+            ],
+            "meta": [
+               "some_meta_info1", "some_meta_info2"
+            ]
+        },
+        "data": {
+            "length":4,
+            "data":{
+                "field1":"something1",
+                "field2":"something2"
+            }
+        }
+    }
+}
