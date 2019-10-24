@@ -18,11 +18,15 @@ import (
 // Service - node service model
 type Service struct {
 	config config.Config
+	db     data
 }
 
 // NewService - initialize node service
 func NewService(cfg config.Config) *Service {
-	return &Service{config: cfg}
+	return &Service{
+		config: cfg,
+		db:     defaultData(),
+	}
 }
 
 var notifyRoute = "/notify"
@@ -57,25 +61,29 @@ func (s *Service) notifyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	rootHash := keys[0]
-	fmt.Println("Received new root hash from cxo tracker service: ", rootHash)
+	dataHash := keys[0]
+	fmt.Println("Received new data hash from cxo tracker service: ", dataHash)
 
 	go func() {
 		time.Sleep(3 * time.Second)
-		s.requestData(rootHash)
+		s.requestData(dataHash)
 	}()
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Service) requestData(rootHash string) {
+func (s *Service) requestData(dataHash string) {
+	if s.db.isSaved(dataHash) {
+		fmt.Printf("received data object with hash: %v already exist", dataHash)
+		return
+	}
 	sPK, sSK := cipher.GenerateKeyPair()
 	client := dmsghttp.DMSGClient(s.config.Discovery, sPK, sSK)
 
-	url := fmt.Sprint(s.config.TrackerAddress, "/data/request?hash=", rootHash)
+	url := fmt.Sprint(s.config.TrackerAddress, "/data/request?hash=", dataHash)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("error creating requestData request for rootHash: ", rootHash)
+		fmt.Println("error creating requestData request for data hash: ", dataHash)
 		return
 	}
 
@@ -92,7 +100,7 @@ func (s *Service) requestData(rootHash string) {
 		return
 	}
 
-	filePath := filepath.Join(s.config.StoragePath, rootHash)
+	filePath := filepath.Join(s.config.StoragePath, dataHash)
 	f, err := os.Create(filePath)
 	if err != nil {
 		panic(err)
@@ -112,6 +120,10 @@ func (s *Service) requestData(rootHash string) {
 	}
 	if err = f.Sync(); err != nil {
 		panic(err)
+	}
+	if err := s.db.saveObject(dataHash, s.config.StoragePath); err != nil {
+		fmt.Println("error saving data object in db with hash: ", dataHash)
+		return
 	}
 	fmt.Println("Storing file on file system finished successfully")
 }

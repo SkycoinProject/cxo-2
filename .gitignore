@@ -1,3 +1,7 @@
 # Editor specific files
 .idea/
 .vscode/
+
+# BoltDb and lock file
+*.db
+*.db.lock
