@@ -161,6 +161,12 @@
 			"revisionTime": "2018-07-16T14:42:29Z"
 		},
 		{
+			"checksumSHA1": "nlSHwVkSAgxf/VcmA5pTjoCMj/I=",
+			"path": "go.etcd.io/bbolt",
+			"revision": "6e135e5d7e3d06257109f1458f8336a05ada6718",
+			"revisionTime": "2019-10-01T16:49:32Z"
+		},
+		{
 			"checksumSHA1": "jfKksm9ENL0+wzoOuMR8kNuIePw=",
 			"path": "golang.org/x/crypto/blake2b",
 			"revision": "87dc89f01550277dc22b74ffcf4cd89fa2f40f4c",
