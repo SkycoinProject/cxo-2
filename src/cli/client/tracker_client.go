@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/skycoin/dmsg/cipher"
+
 	"github.com/SkycoinPro/cxo-2-node/src/config"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 )
@@ -17,10 +19,11 @@ type TrackerClient struct {
 }
 
 func NewTrackerClient(cfg config.Config) *TrackerClient {
+	sPK, sSK := cipher.GenerateKeyPair()
 	return &TrackerClient{
-		client:           dmsghttp.DMSGClient(cfg.Discovery, cfg.PubKey, cfg.SecKey),
+		client:           dmsghttp.DMSGClient(cfg.Discovery, sPK, sSK),
 		trackerAddress:   cfg.TrackerAddress,
-		subscribeAddress: fmt.Sprintf("%v:%v/notify", cfg.PubKey, cfg.Port), //FIXME - read route from node service
+		subscribeAddress: fmt.Sprintf("%v:%v/notify?hash=", cfg.PubKey.Hex(), cfg.Port), //FIXME - read route from node service
 	}
 }
 
@@ -35,6 +38,8 @@ func (t *TrackerClient) Subscribe(publicKey string) error {
 	if err != nil {
 		return fmt.Errorf("error creating subscribe request to public key: %v ", publicKey)
 	}
+
+	fmt.Println("subscribe address: ", t.subscribeAddress)
 	req.Header.Set("Address", t.subscribeAddress)
 
 	resp, err := t.client.Do(req)

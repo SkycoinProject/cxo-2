@@ -26,7 +26,7 @@ const (
 	appRootFolderName   = ".cxo-node"
 	storageFolderName   = "files"
 	keysFileName        = "keys.txt"
-	defaultDiscoveryURL = "https://messaging.discovery.skywire.skycoin.com"
+	defaultDiscoveryURL = "http://dmsg.discovery.skywire.skycoin.com"
 	serverPort          = uint16(8083)
 )
 
@@ -102,7 +102,7 @@ func storeKeys(sPK cipher.PubKey, sSK cipher.SecKey, keysFilePath string) {
 		}
 	}()
 
-	if _, err := f.WriteString(fmt.Sprintf("%v:%v", sPK, sSK)); err != nil {
+	if _, err := f.WriteString(fmt.Sprintf("%v:%v", sPK.Hex(), sSK.Hex())); err != nil {
 		panic(err)
 	}
 	if err = f.Sync(); err != nil {
@@ -113,7 +113,7 @@ func storeKeys(sPK cipher.PubKey, sSK cipher.SecKey, keysFilePath string) {
 
 // FIXME cxo tracker address is hardcoded for now until we find better solution
 func getTrackerAddress() string {
-	trackerPubKey := "033e1ca986931d87deb044bfb2961a24558c2649fe4207b312ec5af100e9382555" // pub changes every time cx tracker is restarted
-	trackerPort := "8082"
+	trackerPubKey := "02150fc16da944e94cf15d79600790e717c2cf106d7e80ba601e0bdf6438a89b83" // pub changes every time cx tracker is restarted
+	trackerPort := "8084"
 	return fmt.Sprintf("dmsg://%v:%v", trackerPubKey, trackerPort)
 }
