@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/SkycoinPro/cxo-2-node/src/cli/client"
-
+	"github.com/SkycoinPro/cxo-2-node/src/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -13,7 +13,8 @@ import (
 const version = "0.1.1"
 
 // NewCLI creates a cli instance
-func NewCLI(client *client.TrackerClient) (*cobra.Command, error) {
+func NewCLI(cfg config.Config) (*cobra.Command, error) {
+	c := client.NewTrackerClient(cfg)
 
 	cxoNodeCLI := &cobra.Command{
 		Short: fmt.Sprintf("The cxo-node command line interface"),
@@ -21,8 +22,8 @@ func NewCLI(client *client.TrackerClient) (*cobra.Command, error) {
 	}
 
 	commands := []*cobra.Command{
-		subscribeCmd(client),
-		saveDataCmd(client),
+		subscribeCmd(c),
+		publishDataCmd(c, cfg),
 	}
 
 	cxoNodeCLI.Version = version
