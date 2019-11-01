@@ -28,8 +28,8 @@ func NewTrackerClient(cfg config.Config) *TrackerClient {
 }
 
 const (
-	subscribeRoute = "/subscribe?pubKey="
-	saveDataRoute  = "/data"
+	subscribeRoute    = "/subscribe?pubKey="
+	announceDataRoute = "/data"
 )
 
 func (t *TrackerClient) Subscribe(publicKey string) error {
@@ -51,25 +51,23 @@ func (t *TrackerClient) Subscribe(publicKey string) error {
 	return nil
 }
 
-func (t *TrackerClient) SaveData(request model.PublishDataRequest) error {
+func (t *TrackerClient) AnnounceData(request model.AnnounceDataRequest) error {
 	bs, err := json.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("marshal request failed due to error: %v", err)
 	}
 	r := bytes.NewReader(bs)
-	url := fmt.Sprint(t.trackerAddress, saveDataRoute)
+	url := fmt.Sprint(t.trackerAddress, announceDataRoute)
 	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
-		return fmt.Errorf("creating publish new data request failed due to error:%v", err)
+		return fmt.Errorf("creating announce data request failed due to error:%v", err)
 	}
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("publish data request failed due to error: %v", err)
+		return fmt.Errorf("announce data request failed due to error: %v", err)
 	}
 
-	cipher.GenerateKeyPair()
-
-	fmt.Println("Publish data request response: ", resp.Status)
+	fmt.Println("Announce data response: ", resp.Status)
 	return nil
 }

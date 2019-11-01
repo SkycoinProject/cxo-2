@@ -1,20 +1,27 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // RootHash model
 type RootHash struct {
-	Publisher      string `json:"publisher"`
-	Signature      string `json:"signature"`
-	Sequence       uint64 `json:"sequence"`
-	DataObjectHash string `json:"dataObjectHash"`
+	Publisher string `json:"publisher"`
+	Signature string `json:"signature"`
+	Sequence  uint64 `json:"sequence"`
+}
+
+// Returns data object key constructed in "sequence:publisher" format
+func (r *RootHash) Key() string {
+	return fmt.Sprintf("%v:%s", r.Sequence, r.Publisher)
 }
 
 // DataObject model
 type DataObject struct {
 	Header   Header   `json:"header"`
 	Manifest Manifest `json:"manifest"`
-	Object   Object   `json:"object"`
+	Objects  []Object `json:"object"`
 }
 
 // Header model
@@ -48,8 +55,8 @@ type Object struct {
 	Data   []byte `json:"data"`
 }
 
-// PublishDataRequest model
-type PublishDataRequest struct {
+// AnnounceDataRequest model
+type AnnounceDataRequest struct {
 	RootHash   RootHash   `json:"rootHash"`
 	DataObject DataObject `json:"dataObject"`
 }

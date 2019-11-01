@@ -23,7 +23,7 @@ func NewCLI(cfg config.Config) (*cobra.Command, error) {
 
 	commands := []*cobra.Command{
 		subscribeCmd(c),
-		publishDataCmd(c, cfg),
+		announceDataCmd(c, cfg),
 	}
 
 	cxoNodeCLI.Version = version

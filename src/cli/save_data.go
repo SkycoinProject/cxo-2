@@ -15,11 +15,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
-	saveDataCmd := &cobra.Command{
-		Short:                 "Publish data to the CXO Tracker service",
-		Use:                   "publish [flags] [path_to_file]",
-		Long:                  "Publish new data to the CXO Tracker service",
+func announceDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
+	announceDataCmd := &cobra.Command{
+		Short:                 "Announce new data to the CXO Tracker service",
+		Use:                   "announce [flags] [path_to_file]",
+		Long:                  "Announce new data to the CXO Tracker service",
 		SilenceUsage:          true,
 		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
@@ -28,52 +28,52 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 			if filePath == "" {
 				return c.Help()
 			}
-			publishDataRequest, err := prepareRequest(filePath, config)
+			announceDataRequest, err := prepareRequest(filePath, config)
 			if err != nil {
 				return err
 			}
-			err = client.SaveData(publishDataRequest)
+			err = client.AnnounceData(announceDataRequest)
 			if err != nil {
 				return err
 			}
 
-			fmt.Println("New data published successfully...")
+			fmt.Println("New data announced successfully...")
 			return nil
 		},
 	}
 
-	return saveDataCmd
+	return announceDataCmd
 }
 
-func prepareRequest(filePath string, config config.Config) (model.PublishDataRequest, error) {
+func prepareRequest(filePath string, config config.Config) (model.AnnounceDataRequest, error) {
 	object, err := constructObject(filePath)
 	if err != nil {
-		return model.PublishDataRequest{}, err
+		return model.AnnounceDataRequest{}, err
 	}
 
 	fileName := filepath.Base(filePath)
-	manifest, err := constructManifest(object, fileName)
+	manifest, err := constructManifest([]model.Object{object}, fileName)
 	if err != nil {
-		return model.PublishDataRequest{}, err
+		return model.AnnounceDataRequest{}, err
 	}
 
 	header, err := constructHeader(object, manifest)
 	if err != nil {
-		return model.PublishDataRequest{}, err
+		return model.AnnounceDataRequest{}, err
 	}
 
 	dataObject := model.DataObject{
 		Header:   header,
 		Manifest: manifest,
-		Object:   object,
+		Objects:  []model.Object{object},
 	}
 
 	rootHash, err := constructRootHash(dataObject, config)
 	if err != nil {
-		return model.PublishDataRequest{}, err
+		return model.AnnounceDataRequest{}, err
 	}
 
-	return model.PublishDataRequest{
+	return model.AnnounceDataRequest{
 		RootHash:   rootHash,
 		DataObject: dataObject,
 	}, nil
@@ -92,32 +92,39 @@ func constructObject(filePath string) (model.Object, error) {
 	return object, nil
 }
 
-func constructManifest(object model.Object, fileName string) (model.Manifest, error) {
-	objectStructure, err := constructObjectStructure(object)
+func constructManifest(objects []model.Object, fileName string) (model.Manifest, error) {
+	objectsStructures, err := constructObjectsStructures(objects)
 	if err != nil {
 		return model.Manifest{}, err
 	}
 
+	meta := []string{fileName} //FIXME - currently only one file name is taken but should be changed in future
+	length := len(objectsStructures) + len(meta)
+
 	return model.Manifest{
-		Length: 1, //FIXME - revisit this
-		Hashes: []model.ObjectStructure{objectStructure},
-		Meta:   []string{fileName},
+		Length: uint64(length),
+		Hashes: objectsStructures,
+		Meta:   meta,
 	}, nil
 
 }
 
-func constructObjectStructure(object model.Object) (model.ObjectStructure, error) {
-	objectHash, err := sha256(object)
-	if err != nil {
-		return model.ObjectStructure{}, fmt.Errorf("hashing object faled due to err: %v", err)
+func constructObjectsStructures(objects []model.Object) ([]model.ObjectStructure, error) {
+	var structures []model.ObjectStructure
+	for i, object := range objects {
+		objectHash, err := sha256(object)
+		if err != nil {
+			return []model.ObjectStructure{}, fmt.Errorf("hashing object faled due to err: %v", err)
+		}
+		structures = append(structures, model.ObjectStructure{
+			Index:                   uint64(i),
+			Hash:                    objectHash,
+			Size:                    object.Length,
+			RecursiveSizeFirstLevel: object.Length,
+			RecursiveSizeFirstTotal: object.Length,
+		})
 	}
-	return model.ObjectStructure{
-		Index:                   1, //FIXME - revisit this
-		Hash:                    objectHash,
-		Size:                    object.Length,
-		RecursiveSizeFirstLevel: object.Length,
-		RecursiveSizeFirstTotal: object.Length,
-	}, nil
+	return structures, nil
 }
 
 func constructHeader(object model.Object, manifest model.Manifest) (model.Header, error) {
@@ -141,16 +148,10 @@ func constructRootHash(dataObject model.DataObject, config config.Config) (model
 		return model.RootHash{}, err
 	}
 
-	dataObjectHash, err := sha256(dataObject)
-	if err != nil {
-		return model.RootHash{}, fmt.Errorf("hashing data object faled due to err: %v", err)
-	}
-
 	return model.RootHash{
-		Publisher:      config.PubKey.Hex(),
-		Signature:      signature,
-		Sequence:       1, //FIXME - sequence should be set in different way
-		DataObjectHash: dataObjectHash,
+		Publisher: config.PubKey.Hex(),
+		Signature: signature,
+		Sequence:  1, //FIXME - sequence should be set in different way
 	}, nil
 }
 
