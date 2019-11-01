@@ -14,7 +14,7 @@ type RootHash struct {
 
 // Returns data object key constructed in "sequence:publisher" format
 func (r *RootHash) Key() string {
-	return fmt.Sprintf("%v:%s", r.Sequence, r.Publisher)
+	return fmt.Sprintf("%v_%s", r.Sequence, r.Publisher)
 }
 
 // DataObject model
