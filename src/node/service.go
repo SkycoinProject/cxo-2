@@ -100,7 +100,16 @@ func (s *Service) requestData(dataHash string) {
 		return
 	}
 
-	filePath := filepath.Join(s.config.StoragePath, dataHash)
+	var dataObject model.DataObject
+	if dataObjectErr := json.Unmarshal(data, &dataObject); dataObjectErr != nil {
+		fmt.Println("error unmarshaling received data object with hash: ", dataHash)
+		return
+	}
+	fileName := dataHash
+	if len(dataObject.Manifest.Meta) > 0 {
+		fileName = fmt.Sprintf("%s_%s", dataHash[:8], dataObject.Manifest.Meta[0])
+	}
+	filePath := filepath.Join(s.config.StoragePath, fileName)
 	f, err := os.Create(filePath)
 	if err != nil {
 		panic(err)
