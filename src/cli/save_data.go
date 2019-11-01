@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -32,6 +33,16 @@ func announceDataCmd(client *client.TrackerClient, config config.Config) *cobra.
 			if err != nil {
 				return err
 			}
+
+			b, err := json.MarshalIndent(announceDataRequest, "", "  ")
+			if err != nil {
+				return err
+			}
+			_, err = os.Stdout.Write(b)
+			if err != nil {
+				return err
+			}
+
 			err = client.AnnounceData(announceDataRequest)
 			if err != nil {
 				return err
