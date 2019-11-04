@@ -28,8 +28,10 @@ The Node stores data locally in a BoltDB bucket called Data Objects. Currently i
 The CLI may be used manually or called upon from other applications. The CLI is available by running the `cxo-node-cli`. It enables users to interact with the CXO 2.0 Tracker and allows:
 
 - Subscribing to pub key
+
     Example usage:
     `cxo-node-cli subscribe <publisher's pub key>`
 - Publishing new objects (_includes signing of the object_)
+
     Example usage:
     `cxo-node-cli publish <pathToFile>`
