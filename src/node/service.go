@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/SkycoinPro/cxo-2-node/src/config"
 	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
@@ -41,8 +43,7 @@ func (s *Service) Run() {
 		Discovery: s.config.Discovery,
 	}
 
-	fmt.Println("Starting server with public key: ", s.config.PubKey.Hex())
-	fmt.Println("Starting server with port: ", s.config.Port)
+	log.Infof("Starting cxo node with public key: %s and port: %v", s.config.PubKey.Hex(), s.config.Port)
 
 	// prepare server route handling
 	mux := http.NewServeMux()
