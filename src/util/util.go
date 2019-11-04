@@ -37,7 +37,7 @@ func PrepareKeyPair(keysFilePath string) (cipher.PubKey, cipher.SecKey) {
 
 func generateKeyPairAndStore(keysFilePath string) (cipher.PubKey, cipher.SecKey) {
 	sPK, sSK := cipher.GenerateKeyPair()
-	fmt.Println("Trying to store keys on file system")
+	log.Info("Trying to store keys on file system")
 	f, err := os.Create(keysFilePath)
 	if err != nil {
 		log.Fatal("Creating file for storing key pair failed due to error: ", err)
