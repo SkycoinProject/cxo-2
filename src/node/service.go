@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,10 +10,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/skycoin/dmsg/cipher"
-
 	"github.com/SkycoinPro/cxo-2-node/src/config"
+	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
+	"github.com/skycoin/dmsg/cipher"
 )
 
 // Service - node service model
@@ -100,7 +101,16 @@ func (s *Service) requestData(dataHash string) {
 		return
 	}
 
-	filePath := filepath.Join(s.config.StoragePath, dataHash)
+	var dataObject model.DataObject
+	if dataObjectErr := json.Unmarshal(data, &dataObject); dataObjectErr != nil {
+		fmt.Println("error unmarshaling received data object with hash: ", dataHash)
+		return
+	}
+	fileName := dataHash
+	if len(dataObject.Manifest.Meta) > 0 {
+		fileName = fmt.Sprintf("%s_%s", dataHash[:8], dataObject.Manifest.Meta[0])
+	}
+	filePath := filepath.Join(s.config.StoragePath, fileName)
 	f, err := os.Create(filePath)
 	if err != nil {
 		panic(err)
@@ -115,7 +125,7 @@ func (s *Service) requestData(dataHash string) {
 		}
 	}()
 
-	if _, err := f.Write(data); err != nil {
+	if _, err := f.Write(dataObject.Objects[0].Data); err != nil {
 		panic(err)
 	}
 	if err = f.Sync(); err != nil {

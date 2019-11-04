@@ -2,14 +2,14 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
-	"github.com/skycoin/dmsg/cipher"
-
 	"github.com/SkycoinPro/cxo-2-node/src/config"
+	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
+	"github.com/skycoin/dmsg/cipher"
 )
 
 type TrackerClient struct {
@@ -28,8 +28,8 @@ func NewTrackerClient(cfg config.Config) *TrackerClient {
 }
 
 const (
-	subscribeRoute = "/subscribe?pubKey="
-	saveDataRoute  = "/data"
+	subscribeRoute    = "/subscribe?pubKey="
+	announceDataRoute = "/data"
 )
 
 func (t *TrackerClient) Subscribe(publicKey string) error {
@@ -51,23 +51,23 @@ func (t *TrackerClient) Subscribe(publicKey string) error {
 	return nil
 }
 
-func (t *TrackerClient) SaveData(filePath string) error {
-	bs, err := ioutil.ReadFile(filePath)
+func (t *TrackerClient) AnnounceData(request model.AnnounceDataRequest) error {
+	bs, err := json.Marshal(request)
 	if err != nil {
-		return fmt.Errorf("reading file: %v failed with error: %v", filePath, err)
+		return fmt.Errorf("marshal request failed due to error: %v", err)
 	}
 	r := bytes.NewReader(bs)
-	url := fmt.Sprint(t.trackerAddress, saveDataRoute)
+	url := fmt.Sprint(t.trackerAddress, announceDataRoute)
 	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
-		return fmt.Errorf("error creating new save data request for file: %v", filePath)
+		return fmt.Errorf("creating announce data request failed due to error:%v", err)
 	}
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("save data request failed due to error: %v", err)
+		return fmt.Errorf("announce data request failed due to error: %v", err)
 	}
 
-	fmt.Println("Save data request response: ", resp.Status)
+	fmt.Println("Announce data response: ", resp.Status)
 	return nil
 }

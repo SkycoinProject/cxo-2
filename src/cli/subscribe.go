@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/SkycoinPro/cxo-2-node/src/cli/client"
-
 	"github.com/spf13/cobra"
 )
 
