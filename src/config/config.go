@@ -68,7 +68,7 @@ func initializeAppFolderStructure() string {
 
 // FIXME cxo tracker address is hardcoded for now until we find better solution
 func getTrackerAddress() string {
-	trackerPubKey := "02150fc16da944e94cf15d79600790e717c2cf106d7e80ba601e0bdf6438a89b83"
+	trackerPubKey := "036cbf1297c2433303909674e1bc25ce341ec1c16012ba28a265066847960e2514"
 	trackerPort := "8084"
 	return fmt.Sprintf("dmsg://%v:%v", trackerPubKey, trackerPort)
 }

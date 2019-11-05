@@ -16,11 +16,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func announceDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
-	announceDataCmd := &cobra.Command{
-		Short:                 "Announce new data to the CXO Tracker service",
-		Use:                   "announce [flags] [path_to_file]",
-		Long:                  "Announce new data to the CXO Tracker service",
+func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
+	publishDataCmd := &cobra.Command{
+		Short:                 "Publish new data to the CXO Tracker service",
+		Use:                   "publish [flags] [path_to_file]",
+		Long:                  "Publish new data to the CXO Tracker service",
 		SilenceUsage:          true,
 		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
@@ -29,12 +29,12 @@ func announceDataCmd(client *client.TrackerClient, config config.Config) *cobra.
 			if filePath == "" {
 				return c.Help()
 			}
-			announceDataRequest, err := prepareRequest(filePath, config)
+			publishDataRequest, err := prepareRequest(filePath, config)
 			if err != nil {
 				return err
 			}
 
-			b, err := json.MarshalIndent(announceDataRequest, "", "  ")
+			b, err := json.MarshalIndent(publishDataRequest, "", "  ")
 			if err != nil {
 				return err
 			}
@@ -43,34 +43,34 @@ func announceDataCmd(client *client.TrackerClient, config config.Config) *cobra.
 				return err
 			}
 
-			err = client.AnnounceData(announceDataRequest)
+			err = client.PublishData(publishDataRequest)
 			if err != nil {
 				return err
 			}
 
-			fmt.Println("New data announced successfully...")
+			fmt.Println("New data published successfully...")
 			return nil
 		},
 	}
 
-	return announceDataCmd
+	return publishDataCmd
 }
 
-func prepareRequest(filePath string, config config.Config) (model.AnnounceDataRequest, error) {
+func prepareRequest(filePath string, config config.Config) (model.PublishDataRequest, error) {
 	object, err := constructObject(filePath)
 	if err != nil {
-		return model.AnnounceDataRequest{}, err
+		return model.PublishDataRequest{}, err
 	}
 
 	fileName := filepath.Base(filePath)
 	manifest, err := constructManifest([]model.Object{object}, fileName)
 	if err != nil {
-		return model.AnnounceDataRequest{}, err
+		return model.PublishDataRequest{}, err
 	}
 
 	header, err := constructHeader(object, manifest)
 	if err != nil {
-		return model.AnnounceDataRequest{}, err
+		return model.PublishDataRequest{}, err
 	}
 
 	dataObject := model.DataObject{
@@ -81,10 +81,10 @@ func prepareRequest(filePath string, config config.Config) (model.AnnounceDataRe
 
 	rootHash, err := constructRootHash(dataObject, config)
 	if err != nil {
-		return model.AnnounceDataRequest{}, err
+		return model.PublishDataRequest{}, err
 	}
 
-	return model.AnnounceDataRequest{
+	return model.PublishDataRequest{
 		RootHash:   rootHash,
 		DataObject: dataObject,
 	}, nil

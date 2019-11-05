@@ -55,8 +55,8 @@ type Object struct {
 	Data   []byte `json:"data"`
 }
 
-// AnnounceDataRequest model
-type AnnounceDataRequest struct {
+// PublishDataRequest model
+type PublishDataRequest struct {
 	RootHash   RootHash   `json:"rootHash"`
 	DataObject DataObject `json:"dataObject"`
 }
