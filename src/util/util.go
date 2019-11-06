@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/SkycoinProject/dmsg/cipher"
 	log "github.com/sirupsen/logrus"
-	"github.com/skycoin/dmsg/cipher"
 )
 
 /* PrepareKeyPair - reads pub and sec key from specified file.

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/SkycoinPro/cxo-2-node/src/util"
+	"github.com/SkycoinProject/dmsg/cipher"
+	"github.com/SkycoinProject/dmsg/disc"
 	"github.com/mitchellh/go-homedir"
-	"github.com/skycoin/dmsg/cipher"
-	"github.com/skycoin/dmsg/disc"
 )
 
 // Config - node's configuration model

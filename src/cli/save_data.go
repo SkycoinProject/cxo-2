@@ -11,18 +11,18 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/src/cli/client"
 	"github.com/SkycoinPro/cxo-2-node/src/config"
 	"github.com/SkycoinPro/cxo-2-node/src/model"
-	dmsgcipher "github.com/skycoin/dmsg/cipher"
-	"github.com/skycoin/skycoin/src/cipher"
+	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/spf13/cobra"
 )
 
 func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
 	publishDataCmd := &cobra.Command{
-		Short:        "Publish new data to the CXO Tracker service",
-		Use:          "publish [flags] [path_to_file]",
-		Long:         "Publish new data to the CXO Tracker service",
-		SilenceUsage: true,
-		Args:         cobra.MinimumNArgs(1),
+		Short:                 "Publish new data to the CXO Tracker service",
+		Use:                   "publish [flags] [path_to_file]",
+		Long:                  "Publish new data to the CXO Tracker service",
+		SilenceUsage:          true,
+		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			filePath := args[0]
@@ -135,9 +135,9 @@ func constructObjectsStructures(objects []model.Object) ([]model.ObjectStructure
 			return []model.ObjectStructure{}, fmt.Errorf("hashing object faled due to err: %v", err)
 		}
 		structures = append(structures, model.ObjectStructure{
-			Index: uint64(i),
-			Hash:  objectHash,
-			Size:  object.Length,
+			Index:                   uint64(i),
+			Hash:                    objectHash,
+			Size:                    object.Length,
 			RecursiveSizeFirstLevel: object.Length,
 			RecursiveSizeFirstTotal: object.Length,
 		})
