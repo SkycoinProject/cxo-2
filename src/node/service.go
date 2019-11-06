@@ -15,7 +15,7 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/src/config"
 	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
-	"github.com/skycoin/dmsg/cipher"
+	"github.com/SkycoinProject/dmsg/cipher"
 )
 
 // Service - node service model

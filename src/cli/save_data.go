@@ -11,8 +11,8 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/src/cli/client"
 	"github.com/SkycoinPro/cxo-2-node/src/config"
 	"github.com/SkycoinPro/cxo-2-node/src/model"
-	dmsgcipher "github.com/skycoin/dmsg/cipher"
-	"github.com/skycoin/skycoin/src/cipher"
+	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/spf13/cobra"
 )
 
@@ -33,6 +33,13 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 			if err != nil {
 				return err
 			}
+
+			seqNo, err := client.GetNewSequenceNumber(config.PubKey.Hex())
+			if err != nil {
+				fmt.Println("Could not find latest sequence number due to error ", err)
+				return err
+			}
+			publishDataRequest.RootHash.Sequence = seqNo
 
 			b, err := json.MarshalIndent(publishDataRequest, "", "  ")
 			if err != nil {

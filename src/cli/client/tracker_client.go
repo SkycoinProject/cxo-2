@@ -2,14 +2,16 @@ package client
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/SkycoinPro/cxo-2-node/src/config"
 	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
-	"github.com/skycoin/dmsg/cipher"
+	"github.com/SkycoinProject/dmsg/cipher"
 )
 
 type TrackerClient struct {
@@ -28,8 +30,9 @@ func NewTrackerClient(cfg config.Config) *TrackerClient {
 }
 
 const (
-	subscribeRoute   = "/subscribe?pubKey="
-	publishDataRoute = "/data"
+	subscribeRoute    = "/subscribe?pubKey="
+	nextSequenceRoute = "/next-sequence?pubKey="
+	publishDataRoute  = "/data"
 )
 
 func (t *TrackerClient) Subscribe(publicKey string) error {
@@ -70,4 +73,38 @@ func (t *TrackerClient) PublishData(request model.PublishDataRequest) error {
 
 	fmt.Println("Publish data response: ", resp.Status)
 	return nil
+}
+
+func (t TrackerClient) GetNewSequenceNumber(publicKey string) (uint64, error) {
+	maxSeq := uint64(0)
+	url := fmt.Sprint(t.trackerAddress, nextSequenceRoute, publicKey)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return maxSeq, fmt.Errorf("error creating next sequence request")
+	}
+
+	req.Header.Set("Address", t.subscribeAddress)
+
+	resp, err := t.client.Do(req)
+	if err != nil {
+		return maxSeq, fmt.Errorf("get next sequence request failed due to error: %v", err)
+	}
+
+	if resp.StatusCode != 200 {
+		if resp.StatusCode == 404 {
+			fmt.Println("Have not found records for the given pub key, returning 1")
+			maxSeq++
+			return maxSeq, nil
+		}
+		return maxSeq, fmt.Errorf("get next sequence request returned non 200 status code %d", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return maxSeq, fmt.Errorf("get next sequence request failed due to error: %s", err)
+	}
+	maxSeq = binary.BigEndian.Uint64(body)
+
+	fmt.Println("next sequence number is ", maxSeq)
+	return maxSeq, nil
 }

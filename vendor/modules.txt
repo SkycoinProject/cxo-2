@@ -1,0 +1,60 @@
+# github.com/SkycoinProject/dmsg v0.0.0-20191031093634-3e3d5a1b2053
+github.com/SkycoinProject/dmsg
+github.com/SkycoinProject/dmsg/cipher
+github.com/SkycoinProject/dmsg/disc
+github.com/SkycoinProject/dmsg/ioutil
+github.com/SkycoinProject/dmsg/noise
+# github.com/SkycoinProject/dmsg-http v0.0.0-20191106143634-c30f8ddd6736
+github.com/SkycoinProject/dmsg-http
+# github.com/SkycoinProject/skycoin v0.26.0
+github.com/SkycoinProject/skycoin/src/cipher
+github.com/SkycoinProject/skycoin/src/util/logging
+# github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
+github.com/davecgh/go-spew/spew
+# github.com/flynn/noise v0.0.0-20180327030543-2492fe189ae6
+github.com/flynn/noise
+# github.com/inconshreveable/mousetrap v1.0.0
+github.com/inconshreveable/mousetrap
+# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/mattn/go-colorable v0.1.4
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.11-0.20191009155615-0e9ddb7c0c0a
+github.com/mattn/go-isatty
+# github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
+github.com/mgutz/ansi
+# github.com/mitchellh/go-homedir v1.1.0
+github.com/mitchellh/go-homedir
+# github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
+github.com/pmezard/go-difflib/difflib
+# github.com/sirupsen/logrus v1.4.3-0.20191014202344-fb62dbe2f2a2
+github.com/sirupsen/logrus
+# github.com/skycoin/skycoin v0.26.0
+github.com/skycoin/skycoin/src/cipher/base58
+github.com/skycoin/skycoin/src/cipher/ripemd160
+github.com/skycoin/skycoin/src/cipher/secp256k1-go
+github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2
+# github.com/spf13/cobra v0.0.6-0.20191014031137-8a4b46fadf75
+github.com/spf13/cobra
+# github.com/spf13/pflag v1.0.5
+github.com/spf13/pflag
+# github.com/stretchr/testify v1.4.1-0.20190904163530-85f2b59c4459
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+# go.etcd.io/bbolt v1.3.4-0.20191001164932-6e135e5d7e3d
+go.etcd.io/bbolt
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+golang.org/x/crypto/blake2b
+golang.org/x/crypto/blake2s
+golang.org/x/crypto/chacha20poly1305
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/internal/chacha20
+golang.org/x/crypto/internal/subtle
+golang.org/x/crypto/poly1305
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/sys v0.0.0-20191010194322-b09406accb47
+golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/yaml.v2 v2.2.4
+gopkg.in/yaml.v2
