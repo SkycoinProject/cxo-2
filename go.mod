@@ -7,6 +7,7 @@ require (
 	github.com/SkycoinProject/dmsg-http v0.0.0-20191106143634-c30f8ddd6736
 	github.com/SkycoinProject/skycoin v0.26.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.11-0.20191009155615-0e9ddb7c0c0a // indirect
