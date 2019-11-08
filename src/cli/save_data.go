@@ -161,7 +161,7 @@ func constructHeader(object model.Object, manifest model.Manifest) (model.Header
 }
 
 func constructRootHash(dataObject model.DataObject, config config.Config) (model.RootHash, error) {
-	signature, err := signDataObject(dataObject, config.SecKey)
+	signature, err := signDataObject(dataObject, config.PubKey, config.SecKey)
 	if err != nil {
 		return model.RootHash{}, err
 	}
@@ -173,7 +173,7 @@ func constructRootHash(dataObject model.DataObject, config config.Config) (model
 	}, nil
 }
 
-func signDataObject(dataObject model.DataObject, secKey dmsgcipher.SecKey) (string, error) {
+func signDataObject(dataObject model.DataObject, pubKey dmsgcipher.PubKey, secKey dmsgcipher.SecKey) (string, error) {
 	dataObjectBytes, err := json.Marshal(dataObject)
 	if err != nil {
 		return "", fmt.Errorf("marshal data object faled due to err: %v", err)
@@ -181,6 +181,10 @@ func signDataObject(dataObject model.DataObject, secKey dmsgcipher.SecKey) (stri
 	signature, err := dmsgcipher.SignPayload(dataObjectBytes, secKey)
 	if err != nil {
 		return "", fmt.Errorf("signing data object faled due to err: %v", err)
+	}
+
+	if err = dmsgcipher.VerifyPubKeySignedPayload(pubKey, signature, dataObjectBytes); err != nil {
+		return "", fmt.Errorf("data object signature verification failed due to error: %v", err)
 	}
 
 	return signature.Hex(), nil
