@@ -3,7 +3,7 @@
 go build -o "$GOPATH/bin/cxo-node" "$GOPATH/src/github.com/SkycoinPro/cxo-2-node/cmd/node"
 go build -o "$GOPATH/bin/cxo-node-cli" "$GOPATH/src/github.com/SkycoinPro/cxo-2-node/cmd/cli"
 
-[[ -d "$HOME/.cxo-node" ]] || mkdir "$HOME/.cxo-node"
+[ -d "$HOME/.cxo-node" ] || mkdir "$HOME/.cxo-node"
 
 if [ -f "$HOME/.bashrc" ]; then
     echo "Installing cli completion for bash..."
