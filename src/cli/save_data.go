@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/SkycoinPro/cxo-2-node/src/cli/client"
@@ -18,20 +18,16 @@ import (
 
 func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
 	publishDataCmd := &cobra.Command{
-		Short:                 "Publish new data to the CXO Tracker service",
-		Use:                   "publish [flags] [path_to_file]",
-		Long:                  "Publish new data to the CXO Tracker service",
-		SilenceUsage:          true,
-		Args:                  cobra.MinimumNArgs(1),
+		Short:        "Publish new data to the CXO Tracker service",
+		Use:          "publish [flags] [path_to_file]",
+		Long:         "Publish new data to the CXO Tracker service",
+		SilenceUsage: true,
+		Args:         cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			filePath := args[0]
 			if filePath == "" {
 				return c.Help()
-			}
-			publishDataRequest, err := prepareRequest(filePath, config)
-			if err != nil {
-				return err
 			}
 
 			seqNo, err := client.GetNewSequenceNumber(config.PubKey.Hex())
@@ -39,7 +35,11 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 				fmt.Println("Could not find latest sequence number due to error ", err)
 				return err
 			}
-			publishDataRequest.RootHash.Sequence = seqNo
+
+			publishDataRequest, err := prepareRequest(filePath, config, seqNo)
+			if err != nil {
+				return err
+			}
 
 			b, err := json.MarshalIndent(publishDataRequest, "", "  ")
 			if err != nil {
@@ -63,46 +63,41 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 	return publishDataCmd
 }
 
-func prepareRequest(filePath string, config config.Config) (model.PublishDataRequest, error) {
-	object, err := constructObject(filePath)
-	if err != nil {
-		return model.PublishDataRequest{}, err
+func prepareRequest(filePath string, config config.Config, sequenceNumber uint64) (model.PublishDataRequest, error) {
+	parcel := model.Parcel{}
+
+	filePaths := strings.Split(filePath, ",")
+	for _, path := range filePaths {
+		isDir, err := isDirectory(path)
+		if err != nil {
+			fmt.Printf("Unable to parse path %s due to error %v", path, err)
+			continue
+		}
+		if isDir {
+			processDirectory(&parcel, path)
+		} else {
+			processFile(&parcel, path)
+		}
+
 	}
 
-	fileName := filepath.Base(filePath)
-	manifest, err := constructManifest([]model.Object{object}, fileName)
-	if err != nil {
-		return model.PublishDataRequest{}, err
-	}
-
-	header, err := constructHeader(object, manifest)
-	if err != nil {
-		return model.PublishDataRequest{}, err
-	}
-
-	dataObject := model.DataObject{
-		Header:   header,
-		Manifest: manifest,
-		Objects:  []model.Object{object},
-	}
-
-	rootHash, err := constructRootHash(dataObject, config)
+	rootHash, err := constructRootHash(parcel, config, sequenceNumber)
 	if err != nil {
 		return model.PublishDataRequest{}, err
 	}
 
 	return model.PublishDataRequest{
-		RootHash:   rootHash,
-		DataObject: dataObject,
+		RootHash: rootHash,
+		Parcel:   parcel,
 	}, nil
 
 }
 
-func constructObject(filePath string) (model.Object, error) {
-	object := model.Object{}
+func constructObject(filePath string) (model.DataObject, error) {
+	object := model.DataObject{}
 	bytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return model.Object{}, fmt.Errorf("reading file: %v failed with error: %v", filePath, err)
+		return model.DataObject{}, fmt.Errorf("reading file: %v failed with error: %v", filePath, err)
 	}
 
 	object.Length = uint64(len(bytes))
@@ -119,7 +114,7 @@ func constructManifest(objects []model.Object, fileName string) (model.Manifest,
 	meta := []string{fileName} //FIXME - currently only one file name is taken but should be changed in future
 	length := len(objectsStructures) + len(meta)
 
-	return model.Manifest{
+	return model.ExternalReferences{
 		Length: uint64(length),
 		Hashes: objectsStructures,
 		Meta:   meta,
@@ -135,9 +130,9 @@ func constructObjectsStructures(objects []model.Object) ([]model.ObjectStructure
 			return []model.ObjectStructure{}, fmt.Errorf("hashing object faled due to err: %v", err)
 		}
 		structures = append(structures, model.ObjectStructure{
-			Index:                   uint64(i),
-			Hash:                    objectHash,
-			Size:                    object.Length,
+			Index: uint64(i),
+			Hash:  objectHash,
+			Size:  object.Length,
 			RecursiveSizeFirstLevel: object.Length,
 			RecursiveSizeFirstTotal: object.Length,
 		})
@@ -145,14 +140,13 @@ func constructObjectsStructures(objects []model.Object) ([]model.ObjectStructure
 	return structures, nil
 }
 
-func constructHeader(object model.Object, manifest model.Manifest) (model.Header, error) {
+func constructHeader(object model.DataObject, manifest model.ExternalReferences) (model.Header, error) {
 	manifestHash, err := sha256(manifest)
 	if err != nil {
 		return model.Header{}, fmt.Errorf("hashing manifest faled due to err: %v", err)
 	}
 
 	return model.Header{
-		Timestamp:    time.Now(),
 		ManifestHash: manifestHash,
 		ManifestSize: manifest.Length,
 		DataHash:     manifest.Hashes[0].Hash, //FIXME - in future probably should be different
@@ -160,8 +154,8 @@ func constructHeader(object model.Object, manifest model.Manifest) (model.Header
 	}, nil
 }
 
-func constructRootHash(dataObject model.DataObject, config config.Config) (model.RootHash, error) {
-	signature, err := signDataObject(dataObject, config.PubKey, config.SecKey)
+func constructRootHash(parcel model.Parcel, config config.Config, sequenceNumber uint64) (model.RootHash, error) {
+	signature, err := signDataObject(parcel, config.PubKey, config.SecKey)
 	if err != nil {
 		return model.RootHash{}, err
 	}
@@ -169,7 +163,8 @@ func constructRootHash(dataObject model.DataObject, config config.Config) (model
 	return model.RootHash{
 		Publisher: config.PubKey.Hex(),
 		Signature: signature,
-		Sequence:  1, //FIXME - sequence should be set in different way
+		Timestamp: time.Now(),
+		Sequence:  sequenceNumber,
 	}, nil
 }
 
@@ -198,4 +193,49 @@ func sha256(object interface{}) (string, error) {
 
 	sha256 := cipher.SumSHA256(bytes) //FIXME - for some reason cannot use same method from dmsgchipher package
 	return sha256.Hex(), nil
+}
+
+func isDirectory(path string) (bool, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	switch mode := fi.Mode(); {
+	case mode.IsDir():
+		// do directory stuff
+		return true, nil
+	case mode.IsRegular():
+		// do file stuff
+		return false, nil
+	}
+}
+
+func processDirectory(parcel *model.Parcel, path string) {
+
+}
+
+func processFile(parcel *model.Parcel, path string) {
+	object, err := constructObject(path)
+	if err != nil {
+		return model.PublishDataRequest{}, err
+	}
+
+	// fileName := filepath.Base(filePath)
+	// manifest, err := constructManifest([]model.Object{object}, fileName)
+	// if err != nil {
+	// 	return model.PublishDataRequest{}, err
+	// }
+
+	// header, err := constructHeader(object, manifest)
+	// if err != nil {
+	// 	return model.PublishDataRequest{}, err
+	// }
+
+	// dataObject := model.DataObject{
+	// 	Header:   header,
+	// 	Manifest: manifest,
+	// 	Objects:  []model.Object{object},
+	// }
 }
