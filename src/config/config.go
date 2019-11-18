@@ -79,6 +79,10 @@ func initStoragePath(appPath string) string {
 func readConfigFile(path string, conf *configFile) {
 	f, err := os.Open(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("File containing config doesn't exist. Reading config from env variables...")
+			return
+		}
 		processError("unable to open config file", err)
 	}
 

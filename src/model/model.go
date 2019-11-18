@@ -7,10 +7,11 @@ import (
 
 // RootHash model
 type RootHash struct {
-	Publisher string    `json:"publisher"`
-	Signature string    `json:"signature"`
-	Sequence  uint64    `json:"sequence"`
-	Timestamp time.Time `json:"timestamp"`
+	Publisher        string    `json:"publisher"`
+	Signature        string    `json:"signature"`
+	Sequence         uint64    `json:"sequence"`
+	Timestamp        time.Time `json:"timestamp"`
+	ObjectHeaderHash string    `json:"objectHeaderHash"`
 }
 
 // Key returns parcel key constructed in "sequence_publisher" format
@@ -20,32 +21,36 @@ func (r *RootHash) Key() string {
 
 // Parcel model
 type Parcel struct {
-	Headers []Header     `json:"headers"`
-	Objects []DataObject `json:"objects"`
+	ObjectHeaders []ObjectHeader `json:"objectHeaders"`
+	Objects       []Object       `json:"objects"`
 }
 
-// Header model
-type Header struct {
-	ManifestHash       string               `json:"manifestHash"`
-	ManifestSize       uint64               `json:"manifestSize"`
-	Length             uint64               `json:"manifestLength"` // FIXME - probably not needed?
-	DataHash           string               `json:"dataHash"`
-	DataSize           uint64               `json:"dataSize"`
-	Meta               []string             `json:"meta"`
-	ExternalReferences []ExternalReferences `json:"externalReferences"`
+// ObjectHeader model
+type ObjectHeader struct {
+	ObjectHash             string               `json:"objectHash"`
+	ObjectSize             uint64               `json:"objectSize"`
+	ExternalReferences     []ExternalReferences `json:"externalReferences"`
+	ExternalReferencesSize uint64               `json:"externalReferencesSize"`
+	Meta                   []Meta               `json:"meta"`
+}
+
+// Meta model
+type Meta struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // ExternalReferences model
 type ExternalReferences struct {
-	Index                   uint64 `json:"index"` // FIXME - probably not needed
-	Hash                    string `json:"hash"`
+	//Index                   uint64 `json:"index"` // FIXME - probably not needed
+	ObjectHeaderHash        string `json:"objectHeaderHash"`
 	Size                    uint64 `json:"size"`
 	RecursiveSizeFirstLevel uint64 `json:"recursiveSizeFirstLevel"`
 	RecursiveSizeFirstTotal uint64 `json:"recursiveSizeTotal"`
 }
 
-// DataObject model
-type DataObject struct {
+// Object model
+type Object struct {
 	Length uint64 `json:"length"`
 	Data   []byte `json:"data"`
 }
