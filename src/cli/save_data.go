@@ -69,16 +69,7 @@ func prepareRequest(filePath string, config config.Config, sequenceNumber uint64
 
 	filePaths := strings.Split(filePath, ",")
 	for _, path := range filePaths {
-		isDir, err := isDirectory(path)
-		if err != nil {
-			fmt.Printf("Unable to parse path %s due to error %v", path, err)
-			continue
-		}
-		if isDir {
-			processDirectory(&parcel, path)
-		} else {
-			processFile(&parcel, path)
-		}
+		processPath(&parcel, path, -1)
 	}
 
 	rootHash, err := constructRootHash(parcel, config, sequenceNumber)
@@ -93,7 +84,51 @@ func prepareRequest(filePath string, config config.Config, sequenceNumber uint64
 
 }
 
-func processFile(parcel *model.Parcel, path string) {
+func processPath(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) {
+		isDir, err := isDirectory(path)
+		if err != nil {
+			fmt.Printf("Unable to parse path %s due to error %v", path, err)
+		return
+		}
+		if isDir {
+		headerIndex, subPaths := processDirectory(parcel, path, parentDirectoryHeaderIndex)
+		for _, subPath := range subPaths {
+			processPath(parcel, subPath, headerIndex)
+		}
+		} else {
+		processFile(parcel, path, parentDirectoryHeaderIndex)
+	}
+		}
+
+func processDirectory(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) (int, []string) {
+	dirName := filepath.Base(path)
+	dirIndex := len(parcel.ObjectHeaders)
+
+	objectHeader, err := constructDirHeader(dirName)
+	if err != nil {
+		processError("Error constructing object header", err)
+	}
+
+	parcel.ObjectHeaders = append(parcel.ObjectHeaders, objectHeader)
+
+	paths, err := listDirectory(path)
+	if err != nil {
+		processError("Not able to list directory "+path, err)
+	}
+
+	if parentDirectoryHeaderIndex >= 0 {
+		hash, err := sha256(objectHeader)
+		if err != nil {
+			fmt.Printf("can't construct header hash for directory %s due to error %v", path, err)
+		} else {
+			constructExternalReference(parcel, hash, uint64(0), parentDirectoryHeaderIndex) //FIXME using size 0 here
+		}
+	}
+
+	return dirIndex, paths //FIXME returning directory header index in headers list here (if not try to fall back to header hash or depth)
+}
+
+func processFile(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) {
 	object, err := constructObject(path)
 	if err != nil {
 		processError("Error constructing object", err)
@@ -107,6 +142,32 @@ func processFile(parcel *model.Parcel, path string) {
 
 	parcel.ObjectHeaders = append(parcel.ObjectHeaders, objectHeader)
 	parcel.Objects = append(parcel.Objects, object)
+
+	if parentDirectoryHeaderIndex < 0 {
+		// if it's not in directory, just simple file, finish here
+		return
+	}
+
+	hash, err := sha256(objectHeader)
+	if err != nil {
+		fmt.Printf("can't construct header hash for file %s due to error %v", path, err)
+		return
+	}
+
+	constructExternalReference(parcel, hash, objectHeader.ObjectSize, parentDirectoryHeaderIndex)
+}
+
+func constructExternalReference(parcel *model.Parcel, hash string, size uint64, parentIndex int) {
+	reference := model.ExternalReferences{ /// FIXME model should be renamed to model.ExternalReference
+		ObjectHeaderHash: hash,
+		Size:             size,
+		RecursiveSizeFirstLevel: size, // TODO make last two work correctly with recursive directories
+		RecursiveSizeFirstTotal: size,
+	}
+	parentDirectoryHeader := parcel.ObjectHeaders[parentIndex]
+	parentDirectoryHeader.ExternalReferences = append(parentDirectoryHeader.ExternalReferences, reference)
+	parentDirectoryHeader.ExternalReferencesSize++
+	parcel.ObjectHeaders[parentIndex] = parentDirectoryHeader
 }
 
 func constructObject(path string) (model.Object, error) {
@@ -140,6 +201,23 @@ func constructObjectHeader(object model.Object, fileName string) (model.ObjectHe
 
 	objectHeader.ObjectHash = objectHash
 	objectHeader.ObjectSize = object.Length
+	objectHeader.Meta = []model.Meta{metaStructure, metaDescription}
+
+	return objectHeader, nil
+}
+
+func constructDirHeader(dirName string) (model.ObjectHeader, error) {
+	objectHeader := model.ObjectHeader{}
+
+	metaStructure := model.Meta{
+		Key:   "type",
+		Value: "directory",
+	}
+	metaDescription := model.Meta{
+		Key:   "name",
+		Value: dirName,
+	}
+
 	objectHeader.Meta = []model.Meta{metaStructure, metaDescription}
 
 	return objectHeader, nil
@@ -250,18 +328,34 @@ func isDirectory(path string) (bool, error) {
 
 	switch mode := fi.Mode(); {
 	case mode.IsDir():
-		// do directory stuff
 		return true, nil
 	case mode.IsRegular():
-		// do file stuff
 		return false, nil
 	default:
 		return false, fmt.Errorf("couldn't determe type of object due to err: %v", err)
 	}
 }
 
-func processDirectory(parcel *model.Parcel, path string) {
+func listDirectory(path string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(path, visit(&files))
+	if err != nil {
+		return []string{}, err
+	}
+	if len(files) > 0 {
+		files = files[1:] // root directory is added as first element, and it's not needed
+	}
+	return files, nil
+}
 
+func visit(files *[]string) filepath.WalkFunc {
+	return func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Printf("not able to visit %s due to error %v", path, err)
+		}
+		*files = append(*files, path)
+		return nil
+	}
 }
 
 func processError(message string, err error) {

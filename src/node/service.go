@@ -102,15 +102,27 @@ func (s *Service) requestData(dataHash string) {
 		return
 	}
 
-	var dataObject model.DataObject
+	var dataObject model.Parcel
 	if dataObjectErr := json.Unmarshal(data, &dataObject); dataObjectErr != nil {
 		fmt.Println("error unmarshaling received data object with hash: ", dataHash)
 		return
 	}
 	fileName := dataHash
-	if len(dataObject.Manifest.Meta) > 0 {
-		fileName = fmt.Sprintf("%s_%s", dataHash[:8], dataObject.Manifest.Meta[0])
+	// FIXME add directory support here
+	actualNameSet := false
+	for _, header := range dataObject.ObjectHeaders {
+		for _, meta := range header.Meta {
+			if meta.Key == "name" {
+				fileName = fmt.Sprintf("%s_%s", dataHash[:8], meta.Value)
+				actualNameSet = true
+				break
+			}
+		}
+		if actualNameSet {
+			break
+		}
 	}
+
 	filePath := filepath.Join(s.config.StoragePath, fileName)
 	f, err := os.Create(filePath)
 	if err != nil {
