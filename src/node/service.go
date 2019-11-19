@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -16,6 +17,7 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	"github.com/SkycoinProject/dmsg/cipher"
+	coincipher "github.com/SkycoinProject/skycoin/src/cipher"
 )
 
 // Service - node service model
@@ -94,6 +96,11 @@ func (s *Service) requestData(dataHash string) {
 		fmt.Println("requestData request failed due to error: ", err)
 		return
 	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	data, err := ioutil.ReadAll(resp.Body)
 
@@ -102,51 +109,75 @@ func (s *Service) requestData(dataHash string) {
 		return
 	}
 
-	var dataObject model.Parcel
-	if dataObjectErr := json.Unmarshal(data, &dataObject); dataObjectErr != nil {
+	var parcel model.Parcel
+	if dataObjectErr := json.Unmarshal(data, &parcel); dataObjectErr != nil {
 		fmt.Println("error unmarshaling received data object with hash: ", dataHash)
 		return
 	}
-	fileName := dataHash
-	// FIXME add directory support here
-	actualNameSet := false
-	for _, header := range dataObject.ObjectHeaders {
+
+	storagePath := s.config.StoragePath
+	for _, header := range parcel.ObjectHeaders {
+		name := dataHash
+		isDirectory := false
 		for _, meta := range header.Meta {
-			if meta.Key == "name" {
-				fileName = fmt.Sprintf("%s_%s", dataHash[:8], meta.Value)
-				actualNameSet = true
-				break
+			if meta.Key == "type" && meta.Value == "directory" {
+				isDirectory = true
+			} else if meta.Key == "name" {
+				name = fmt.Sprintf("%s_%s", dataHash[:8], meta.Value)
 			}
 		}
-		if actualNameSet {
-			break
+		if isDirectory {
+			i := strings.Index(name, "_") + 1 // find split used when defining name and drop it if exists
+			name = name[i:]
+			storagePath = filepath.Join(storagePath, name)
+			if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+				os.Mkdir(storagePath, os.ModePerm)
+			}
+		} else {
+			filePath := filepath.Join(storagePath, name)
+			//TODO replace with local data object storage
+			object, err := findObjectByHash(parcel.Objects, header.ObjectHash)
+			if err != nil {
+				fmt.Printf("error writing file to local storage - can't find content for file %s", name)
+			} else {
+				createFile(filePath, object.Data)
+			}
 		}
 	}
 
-	filePath := filepath.Join(s.config.StoragePath, fileName)
-	f, err := os.Create(filePath)
+	// TODO store actual objects and headers for p2p communication
+	fmt.Println("Storing file on file system finished successfully")
+}
+
+func findObjectByHash(objects []model.Object, objectHash string) (model.Object, error) {
+	for _, object := range objects {
+		bytes, err := json.Marshal(object)
+		if err != nil {
+			return model.Object{}, err
+		}
+
+		sha256 := coincipher.SumSHA256(bytes)
+		if sha256.Hex() == objectHash {
+			return object, nil
+		}
+	}
+	return model.Object{}, fmt.Errorf("couldn't find object by hash %s", objectHash)
+}
+
+func createFile(path string, content []byte) {
+	f, err := os.Create(path)
 	if err != nil {
 		panic(err)
 	}
-
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			panic(err)
-		}
 		if err := f.Close(); err != nil {
 			panic(err)
 		}
 	}()
-
-	if _, err := f.Write(dataObject.Objects[0].Data); err != nil {
+	if _, err := f.Write(content); err != nil {
 		panic(err)
 	}
 	if err = f.Sync(); err != nil {
 		panic(err)
 	}
-	if err := s.db.saveObject(dataHash, s.config.StoragePath); err != nil {
-		fmt.Println("error saving data object in db with hash: ", dataHash)
-		return
-	}
-	fmt.Println("Storing file on file system finished successfully")
 }
