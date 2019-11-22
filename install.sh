@@ -9,7 +9,7 @@ go build -o "$GOPATH/bin/cxo-node-cli" "$GOPATH/src/github.com/SkycoinPro/cxo-2-
 #cli completion base directory
 COMPLETION_DIR="$HOME/.cxo-node/.cli-completion"
 
-[ -d "$COMPLETION_DIR" ] || mkdir "$COMPLETION_DIR"
+[ -d "$COMPLETION_DIR" ] || mkdir -p "$COMPLETION_DIR"
 
 BASH_FILE="$HOME/.bashrc" 
 if [ -f "$BASH_FILE" ]; then
