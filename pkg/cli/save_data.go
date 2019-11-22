@@ -19,11 +19,11 @@ import (
 
 func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
 	publishDataCmd := &cobra.Command{
-		Short:                 "Publish new data to the CXO Tracker service",
-		Use:                   "publish [flags] [path_to_file]",
-		Long:                  "Publish new data to the CXO Tracker service",
-		SilenceUsage:          true,
-		Args:                  cobra.MinimumNArgs(1),
+		Short:        "Publish new data to the CXO Tracker service",
+		Use:          "publish [flags] [path_to_file]",
+		Long:         "Publish new data to the CXO Tracker service",
+		SilenceUsage: true,
+		Args:         cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			filePath := args[0]
@@ -67,7 +67,7 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 func prepareRequest(filePath string, config config.Config, sequenceNumber uint64) (model.PublishDataRequest, error) {
 	parcel := model.Parcel{}
 
-	filePaths := strings.Split(filePath, ",")
+	filePaths := strings.Split(filePath, ",") // TODO figure out how multiple paths would be processed, probably via multiple header hashes
 	for _, path := range filePaths {
 		processPath(&parcel, path, -1)
 	}
@@ -259,55 +259,6 @@ func signParcel(parcel model.Parcel, pubKey dmsgcipher.PubKey, secKey dmsgcipher
 
 	return signature.Hex(), nil
 }
-
-//func constructManifest(objects []model.Object, fileName string) (model.Manifest, error) {
-//	objectsStructures, err := constructObjectsStructures(objects)
-//	if err != nil {
-//		return model.Manifest{}, err
-//	}
-//
-//	meta := []string{fileName} //FIXME - currently only one file name is taken but should be changed in future
-//	length := len(objectsStructures) + len(meta)
-//
-//	return model.ExternalReferences{
-//		Length: uint64(length),
-//		Hashes: objectsStructures,
-//		Meta:   meta,
-//	}, nil
-//
-//}
-
-//func constructObjectsStructures(objects []model.Object) ([]model.ObjectStructure, error) {
-//	var structures []model.ObjectStructure
-//	for i, object := range objects {
-//		objectHash, err := sha256(object)
-//		if err != nil {
-//			return []model.ObjectStructure{}, fmt.Errorf("hashing object faled due to err: %v", err)
-//		}
-//		structures = append(structures, model.ObjectStructure{
-//			Index:                   uint64(i),
-//			Hash:                    objectHash,
-//			Size:                    object.Length,
-//			RecursiveSizeFirstLevel: object.Length,
-//			RecursiveSizeFirstTotal: object.Length,
-//		})
-//	}
-//	return structures, nil
-//}
-
-//func constructHeader(object model.DataObject, manifest model.ExternalReferences) (model.Header, error) {
-//	manifestHash, err := sha256(manifest)
-//	if err != nil {
-//		return model.Header{}, fmt.Errorf("hashing manifest faled due to err: %v", err)
-//	}
-//
-//	return model.Header{
-//		ManifestHash: manifestHash,
-//		ManifestSize: manifest.Length,
-//		DataHash:     manifest.Hashes[0].Hash, //FIXME - in future probably should be different
-//		DataSize:     object.Length,
-//	}, nil
-//}
 
 func sha256(object interface{}) (string, error) {
 	bytes, err := json.Marshal(object)
