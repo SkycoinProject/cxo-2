@@ -287,26 +287,14 @@ func isDirectory(path string) (bool, error) {
 	}
 }
 
+// TODO consider droping this func and use FileInfo instead of string paths
 func listDirectory(path string) ([]string, error) {
 	var files []string
-	err := filepath.Walk(path, visit(&files))
-	if err != nil {
-		return []string{}, err
+	infos, err := ioutil.ReadDir(path)
+	for _, inf := range infos {
+		files = append(files, filepath.Join(path, inf.Name()))
 	}
-	if len(files) > 0 {
-		files = files[1:] // root directory is added as first element, and it's not needed
-	}
-	return files, nil
-}
-
-func visit(files *[]string) filepath.WalkFunc {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Printf("not able to visit %s due to error %v", path, err)
-		}
-		*files = append(*files, path)
-		return nil
-	}
+	return files, err
 }
 
 func processError(message string, err error) {
