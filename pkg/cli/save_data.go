@@ -69,7 +69,7 @@ func prepareRequest(filePath string, config config.Config, sequenceNumber uint64
 
 	filePaths := strings.Split(filePath, ",") // TODO figure out how multiple paths would be processed, probably via multiple header hashes
 	for _, path := range filePaths {
-		processPath(&parcel, path, -1)
+		processPath(&parcel, path, []int{})
 	}
 
 	rootHash, err := constructRootHash(parcel, config, sequenceNumber)
@@ -84,23 +84,34 @@ func prepareRequest(filePath string, config config.Config, sequenceNumber uint64
 
 }
 
-func processPath(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) {
+func processPath(parcel *model.Parcel, path string, parentDirectories []int) {
 	isDir, err := isDirectory(path)
 	if err != nil {
 		fmt.Printf("Unable to parse path %s due to error %v", path, err)
 		return
 	}
 	if isDir {
-		headerIndex, subPaths := processDirectory(parcel, path, parentDirectoryHeaderIndex)
+		headerIndex, subPaths := processDirectory(parcel, path, parentDirectories)
 		for _, subPath := range subPaths {
-			processPath(parcel, subPath, headerIndex)
+			newParentDirectories := []int{}
+			newParentDirectories = append(newParentDirectories, parentDirectories...)
+			newParentDirectories = append(newParentDirectories, headerIndex)
+			processPath(parcel, subPath, newParentDirectories)
+		}
+		if len(parentDirectories) > 0 {
+			hash, err := sha256(parcel.ObjectHeaders[headerIndex])
+			if err != nil {
+				fmt.Printf("can't construct header hash for directory %s due to error %v", path, err)
+			} else {
+				constructExternalReference(parcel, hash, uint64(0), parentDirectories) //FIXME using size 0 here
+			}
 		}
 	} else {
-		processFile(parcel, path, parentDirectoryHeaderIndex)
+		processFile(parcel, path, parentDirectories)
 	}
 }
 
-func processDirectory(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) (int, []string) {
+func processDirectory(parcel *model.Parcel, path string, parentDirectories []int) (int, []string) {
 	dirName := filepath.Base(path)
 	dirIndex := len(parcel.ObjectHeaders)
 
@@ -116,19 +127,10 @@ func processDirectory(parcel *model.Parcel, path string, parentDirectoryHeaderIn
 		processError("Not able to list directory "+path, err)
 	}
 
-	if parentDirectoryHeaderIndex >= 0 {
-		hash, err := sha256(objectHeader)
-		if err != nil {
-			fmt.Printf("can't construct header hash for directory %s due to error %v", path, err)
-		} else {
-			constructExternalReference(parcel, hash, uint64(0), parentDirectoryHeaderIndex) //FIXME using size 0 here
-		}
-	}
-
 	return dirIndex, paths //FIXME returning directory header index in headers list here (if not try to fall back to header hash or depth)
 }
 
-func processFile(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) {
+func processFile(parcel *model.Parcel, path string, parentDirectories []int) {
 	object, err := constructObject(path)
 	if err != nil {
 		processError("Error constructing object", err)
@@ -143,7 +145,7 @@ func processFile(parcel *model.Parcel, path string, parentDirectoryHeaderIndex i
 	parcel.ObjectHeaders = append(parcel.ObjectHeaders, objectHeader)
 	parcel.Objects = append(parcel.Objects, object)
 
-	if parentDirectoryHeaderIndex < 0 {
+	if len(parentDirectories) == 0 {
 		// if it's not in directory, just simple file, finish here
 		return
 	}
@@ -154,20 +156,27 @@ func processFile(parcel *model.Parcel, path string, parentDirectoryHeaderIndex i
 		return
 	}
 
-	constructExternalReference(parcel, hash, objectHeader.ObjectSize, parentDirectoryHeaderIndex)
+	constructExternalReference(parcel, hash, objectHeader.ObjectSize, parentDirectories)
 }
 
-func constructExternalReference(parcel *model.Parcel, hash string, size uint64, parentIndex int) {
-	reference := model.ExternalReferences{ /// FIXME model should be renamed to model.ExternalReference
-		ObjectHeaderHash:        hash,
-		Size:                    size,
-		RecursiveSizeFirstLevel: size, // TODO make last two work correctly with recursive directories
-		RecursiveSizeFirstTotal: size,
+func constructExternalReference(parcel *model.Parcel, hash string, size uint64, parentDirectories []int) {
+	if len(parentDirectories) == 0 {
+		return
 	}
+
+	parentIndex := parentDirectories[len(parentDirectories)-1]
 	parentDirectoryHeader := parcel.ObjectHeaders[parentIndex]
-	parentDirectoryHeader.ExternalReferences = append(parentDirectoryHeader.ExternalReferences, reference)
+	parentDirectoryHeader.ExternalReferences = append(parentDirectoryHeader.ExternalReferences, hash)
 	parentDirectoryHeader.ExternalReferencesSize++
+	parentDirectoryHeader.RecursiveSizeTotal += size
+	parentDirectoryHeader.RecursiveSizeFirstLevel += size
 	parcel.ObjectHeaders[parentIndex] = parentDirectoryHeader
+
+	for i := len(parentDirectories) - 1; i > 0; i-- {
+		parentDirectoryHeader := parcel.ObjectHeaders[i]
+		parentDirectoryHeader.RecursiveSizeTotal += size
+		parcel.ObjectHeaders[i] = parentDirectoryHeader
+	}
 }
 
 func constructObject(path string) (model.Object, error) {
