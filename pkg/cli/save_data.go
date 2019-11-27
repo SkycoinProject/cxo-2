@@ -103,7 +103,7 @@ func processPath(parcel *model.Parcel, path string, parentDirectories []int) {
 			if err != nil {
 				fmt.Printf("can't construct header hash for directory %s due to error %v", path, err)
 			} else {
-				constructExternalReference(parcel, hash, uint64(0), parentDirectories) //FIXME using size 0 here
+				constructExternalReference(parcel, hash, uint64(0), parentDirectories)
 			}
 		}
 	} else {
@@ -172,10 +172,16 @@ func constructExternalReference(parcel *model.Parcel, hash string, size uint64, 
 	parentDirectoryHeader.RecursiveSizeFirstLevel += size
 	parcel.ObjectHeaders[parentIndex] = parentDirectoryHeader
 
-	for i := len(parentDirectories) - 1; i > 0; i-- {
-		parentDirectoryHeader := parcel.ObjectHeaders[i]
+	if size == 0 {
+		// no need to update senior parents if the size is 0
+		return
+	}
+
+	for i := len(parentDirectories) - 2; i >= 0; i-- {
+		upTheTreeIndex := parentDirectories[i]
+		parentDirectoryHeader := parcel.ObjectHeaders[upTheTreeIndex]
 		parentDirectoryHeader.RecursiveSizeTotal += size
-		parcel.ObjectHeaders[i] = parentDirectoryHeader
+		parcel.ObjectHeaders[upTheTreeIndex] = parentDirectoryHeader
 	}
 }
 
