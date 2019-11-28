@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/SkycoinPro/cxo-2-node/pkg/cli/client"
@@ -67,10 +66,8 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 func prepareRequest(filePath string, config config.Config, sequenceNumber uint64) (model.PublishDataRequest, error) {
 	parcel := model.Parcel{}
 
-	filePaths := strings.Split(filePath, ",") // TODO figure out how multiple paths would be processed, probably via multiple header hashes
-	for _, path := range filePaths {
-		processPath(&parcel, path, []int{})
-	}
+	// we're supporting only one path in the request at a time
+	processPath(&parcel, filePath, []int{})
 
 	rootHash, err := constructRootHash(parcel, config, sequenceNumber)
 	if err != nil {
