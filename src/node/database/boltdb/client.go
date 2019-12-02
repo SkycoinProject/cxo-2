@@ -11,8 +11,11 @@ import (
 var DB *bolt.DB
 
 const (
-	databaseName     = "objects.db"
-	DataObjectBucket = "DATA_OBJECTS"
+	databaseName = "objects.db"
+	// ObjectHeaderBucket - object header bucket name
+	ObjectHeaderBucket = "OBJECT_HEADERS"
+	// ObjectBucket - object bucket name
+	ObjectBucket = "OBJECTS"
 )
 
 // Init - initialization of bolt db
@@ -39,9 +42,13 @@ func Init() func() {
 
 func initBuckets() error {
 	return DB.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(DataObjectBucket))
+		_, err := tx.CreateBucketIfNotExists([]byte(ObjectBucket))
 		if err != nil {
 			return fmt.Errorf("could not create object bucket: %v", err)
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(ObjectHeaderBucket))
+		if err != nil {
+			return fmt.Errorf("could not create object header bucket: %v", err)
 		}
 		return nil
 	})

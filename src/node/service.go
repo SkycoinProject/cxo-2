@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -17,7 +16,6 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/src/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	"github.com/SkycoinProject/dmsg/cipher"
-	coincipher "github.com/SkycoinProject/skycoin/src/cipher"
 )
 
 // Service - node service model
@@ -65,36 +63,96 @@ func (s *Service) notifyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	dataHash := keys[0]
-	fmt.Println("Received new data hash from cxo tracker service: ", dataHash)
+	objectHeaderHash := keys[0]
+	fmt.Println("Received new object header hash from cxo tracker service: ", objectHeaderHash)
 
 	go func() {
 		time.Sleep(3 * time.Second)
-		s.requestData(dataHash)
+		s.requestData(objectHeaderHash)
 	}()
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Service) requestData(dataHash string) {
-	if s.db.isSaved(dataHash) {
-		fmt.Printf("received data object with hash: %v already exist", dataHash)
+func (s *Service) requestData(rootObjectHeaderHash string) {
+	if s.db.isSaved(rootObjectHeaderHash) {
+		fmt.Printf("received object header hash: %v already exist", rootObjectHeaderHash)
 		return
 	}
 	sPK, sSK := cipher.GenerateKeyPair()
 	client := dmsghttp.DMSGClient(s.config.Discovery, sPK, sSK)
 
-	url := fmt.Sprint(s.config.TrackerAddress, "/data/request?hash=", dataHash)
+	rootObjectHeader, err := s.fetchObjectHeader(client, rootObjectHeaderHash)
+	if err != nil {
+		fmt.Println("Fetching root object header hash failed due to error: ", err)
+		return
+	}
+	missingObjectHeaders := []model.ObjectHeader{rootObjectHeader}
+
+	for _, refs := range rootObjectHeader.ExternalReferences {
+		_, err := s.db.getObjectHeader(refs.ObjectHeaderHash)
+		if err != nil {
+			if err == errCannotFindObjectHeader {
+				objectHeader, err := s.fetchObjectHeader(client, refs.ObjectHeaderHash)
+				if err != nil {
+					fmt.Println("Fetching object header hash failed due to error: ", err)
+					return
+				}
+
+				missingObjectHeaders = append(missingObjectHeaders, objectHeader)
+				continue
+			}
+			fmt.Println("Fetching object header failed due to error: ", err)
+			return
+		}
+	}
+
+	storagePath := s.config.StoragePath
+	for _, header := range missingObjectHeaders {
+		name := rootObjectHeaderHash
+		isDirectory := false
+		for _, meta := range header.Meta {
+			if meta.Key == "type" && meta.Value == "directory" {
+				isDirectory = true
+			} else if meta.Key == "name" {
+				name = meta.Value
+			}
+		}
+		if isDirectory {
+			storagePath = filepath.Join(storagePath, name)
+			if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+				_ = os.Mkdir(storagePath, os.ModePerm)
+			}
+		} else {
+			filePath := filepath.Join(storagePath, name)
+			object, err := s.fetchObject(client, header.ObjectHash)
+			if err != nil {
+				fmt.Printf("error writing file to local storage - can't fetch content for file %s", name)
+			} else {
+				err = s.db.saveObject(header.ObjectHash, filePath)
+				if err != nil {
+					fmt.Print("error saving object in db with hash: ", header.ObjectHash)
+				}
+				createFile(filePath, object.Data)
+			}
+		}
+	}
+
+	fmt.Println("Update of local storage finished successfully")
+}
+
+func (s *Service) fetchObjectHeader(client *http.Client, objectHeaderHash string) (model.ObjectHeader, error) {
+	objectHeader := model.ObjectHeader{}
+	url := fmt.Sprint(s.config.TrackerAddress, "/data/object/header?hash=", objectHeaderHash)
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("error creating requestData request for data hash: ", dataHash)
-		return
+		return objectHeader, fmt.Errorf("error creating request for object header with hash: %v", objectHeaderHash)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("requestData request failed due to error: ", err)
-		return
+		return objectHeader, fmt.Errorf("request for object header failed due to error: %v", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -103,65 +161,46 @@ func (s *Service) requestData(dataHash string) {
 	}()
 
 	data, err := ioutil.ReadAll(resp.Body)
-
 	if err != nil {
-		fmt.Println("Error reading data: ", err)
-		return
+		return objectHeader, fmt.Errorf("error reading data: %v", err)
 	}
 
-	var parcel model.Parcel
-	if dataObjectErr := json.Unmarshal(data, &parcel); dataObjectErr != nil {
-		fmt.Println("error unmarshaling received data object with hash: ", dataHash)
-		return
+	if objectHeaderErr := json.Unmarshal(data, &objectHeader); objectHeaderErr != nil {
+		return objectHeader, fmt.Errorf("error unmarshaling received object with hash: %v", objectHeaderHash)
 	}
 
-	storagePath := s.config.StoragePath
-	for _, header := range parcel.ObjectHeaders {
-		name := dataHash
-		isDirectory := false
-		for _, meta := range header.Meta {
-			if meta.Key == "type" && meta.Value == "directory" {
-				isDirectory = true
-			} else if meta.Key == "name" {
-				name = fmt.Sprintf("%s_%s", dataHash[:8], meta.Value)
-			}
-		}
-		if isDirectory {
-			i := strings.Index(name, "_") + 1 // find split used when defining name and drop it if exists
-			name = name[i:]
-			storagePath = filepath.Join(storagePath, name)
-			if _, err := os.Stat(storagePath); os.IsNotExist(err) {
-				os.Mkdir(storagePath, os.ModePerm)
-			}
-		} else {
-			filePath := filepath.Join(storagePath, name)
-			//TODO replace with local data object storage
-			object, err := findObjectByHash(parcel.Objects, header.ObjectHash)
-			if err != nil {
-				fmt.Printf("error writing file to local storage - can't find content for file %s", name)
-			} else {
-				createFile(filePath, object.Data)
-			}
-		}
-	}
-
-	// TODO store actual objects and headers for p2p communication
-	fmt.Println("Storing file on file system finished successfully")
+	return objectHeader, nil
 }
 
-func findObjectByHash(objects []model.Object, objectHash string) (model.Object, error) {
-	for _, object := range objects {
-		bytes, err := json.Marshal(object)
-		if err != nil {
-			return model.Object{}, err
-		}
+func (s *Service) fetchObject(client *http.Client, objectHash string) (model.Object, error) {
+	object := model.Object{}
+	url := fmt.Sprint(s.config.TrackerAddress, "/data/object?hash=", objectHash)
 
-		sha256 := coincipher.SumSHA256(bytes)
-		if sha256.Hex() == objectHash {
-			return object, nil
-		}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return object, fmt.Errorf("error creating request for object with hash: %v", objectHash)
 	}
-	return model.Object{}, fmt.Errorf("couldn't find object by hash %s", objectHash)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return object, fmt.Errorf("request for object failed due to error: %v", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return object, fmt.Errorf("error reading data: %v", err)
+	}
+
+	if objectErr := json.Unmarshal(data, &object); objectErr != nil {
+		return object, fmt.Errorf("error unmarshaling received object with hash: %v", objectHash)
+	}
+
+	return object, nil
 }
 
 func createFile(path string, content []byte) {
