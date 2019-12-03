@@ -87,15 +87,24 @@ func (s *Service) requestData(rootObjectHeaderHash string) {
 		fmt.Println("Fetching root object header hash failed due to error: ", err)
 		return
 	}
+	if headerSaveErr := s.db.saveObjectHeader(rootObjectHeaderHash, rootObjectHeader); headerSaveErr != nil {
+		fmt.Printf("Saving object header with hash: %v failed due to error: %v", rootObjectHeaderHash, err)
+		return
+	}
 	missingObjectHeaders := []model.ObjectHeader{rootObjectHeader}
 
-	for _, refs := range rootObjectHeader.ExternalReferences {
-		_, err := s.db.getObjectHeader(refs.ObjectHeaderHash)
+	for _, ref := range rootObjectHeader.ExternalReferences {
+		_, err := s.db.getObjectHeader(ref.ObjectHeaderHash)
 		if err != nil {
 			if err == errCannotFindObjectHeader {
-				objectHeader, err := s.fetchObjectHeader(client, refs.ObjectHeaderHash)
+				objectHeader, err := s.fetchObjectHeader(client, ref.ObjectHeaderHash)
 				if err != nil {
-					fmt.Println("Fetching object header hash failed due to error: ", err)
+					fmt.Println("Fetching object header failed due to error: ", err)
+					return
+				}
+
+				if headerSaveErr := s.db.saveObjectHeader(ref.ObjectHeaderHash, objectHeader); headerSaveErr != nil {
+					fmt.Printf("Saving object header with hash: %v failed due to error: %v", ref.ObjectHeaderHash, err)
 					return
 				}
 
