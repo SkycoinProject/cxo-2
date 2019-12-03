@@ -60,3 +60,8 @@ type PublishDataRequest struct {
 	RootHash RootHash `json:"rootHash"`
 	Parcel   Parcel   `json:"parcel"`
 }
+
+// GetObjectHeadersResponse model
+type GetObjectHeadersResponse struct {
+	ObjectHeaders []ObjectHeader `json:"objectHeaders"`
+}
