@@ -12,8 +12,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/SkycoinPro/cxo-2-node/src/config"
-	"github.com/SkycoinPro/cxo-2-node/src/model"
+	"github.com/SkycoinPro/cxo-2-node/pkg/config"
+	"github.com/SkycoinPro/cxo-2-node/pkg/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	"github.com/SkycoinProject/dmsg/cipher"
 )

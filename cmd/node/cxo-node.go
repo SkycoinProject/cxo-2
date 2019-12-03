@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/SkycoinPro/cxo-2-node/src/config"
-	"github.com/SkycoinPro/cxo-2-node/src/node"
-	"github.com/SkycoinPro/cxo-2-node/src/node/database/boltdb"
+	"github.com/SkycoinPro/cxo-2-node/pkg/config"
+	"github.com/SkycoinPro/cxo-2-node/pkg/node"
+	"github.com/SkycoinPro/cxo-2-node/pkg/node/database/boltdb"
 )
 
 func main() {
