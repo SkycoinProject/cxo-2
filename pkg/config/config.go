@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SkycoinPro/cxo-2-node/src/util"
+	"github.com/SkycoinPro/cxo-2-node/pkg/util"
 	"github.com/SkycoinProject/dmsg/cipher"
 	"github.com/SkycoinProject/dmsg/disc"
 	"github.com/kelseyhightower/envconfig"

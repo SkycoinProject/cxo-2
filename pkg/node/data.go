@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/SkycoinPro/cxo-2-node/src/model"
+	"github.com/SkycoinPro/cxo-2-node/pkg/model"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/SkycoinPro/cxo-2-node/src/node/database/boltdb"
+	"github.com/SkycoinPro/cxo-2-node/pkg/node/database/boltdb"
 	bolt "go.etcd.io/bbolt"
 )
 

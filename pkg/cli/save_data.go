@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SkycoinPro/cxo-2-node/src/cli/client"
-	"github.com/SkycoinPro/cxo-2-node/src/config"
-	"github.com/SkycoinPro/cxo-2-node/src/model"
+	"github.com/SkycoinPro/cxo-2-node/pkg/cli/client"
+	"github.com/SkycoinPro/cxo-2-node/pkg/config"
+	"github.com/SkycoinPro/cxo-2-node/pkg/model"
 	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/spf13/cobra"
@@ -85,20 +85,20 @@ func prepareRequest(filePath string, config config.Config, sequenceNumber uint64
 }
 
 func processPath(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) {
-		isDir, err := isDirectory(path)
-		if err != nil {
-			fmt.Printf("Unable to parse path %s due to error %v", path, err)
+	isDir, err := isDirectory(path)
+	if err != nil {
+		fmt.Printf("Unable to parse path %s due to error %v", path, err)
 		return
-		}
-		if isDir {
+	}
+	if isDir {
 		headerIndex, subPaths := processDirectory(parcel, path, parentDirectoryHeaderIndex)
 		for _, subPath := range subPaths {
 			processPath(parcel, subPath, headerIndex)
 		}
-		} else {
+	} else {
 		processFile(parcel, path, parentDirectoryHeaderIndex)
 	}
-		}
+}
 
 func processDirectory(parcel *model.Parcel, path string, parentDirectoryHeaderIndex int) (int, []string) {
 	dirName := filepath.Base(path)
@@ -159,8 +159,8 @@ func processFile(parcel *model.Parcel, path string, parentDirectoryHeaderIndex i
 
 func constructExternalReference(parcel *model.Parcel, hash string, size uint64, parentIndex int) {
 	reference := model.ExternalReferences{ /// FIXME model should be renamed to model.ExternalReference
-		ObjectHeaderHash: hash,
-		Size:             size,
+		ObjectHeaderHash:        hash,
+		Size:                    size,
 		RecursiveSizeFirstLevel: size, // TODO make last two work correctly with recursive directories
 		RecursiveSizeFirstTotal: size,
 	}
