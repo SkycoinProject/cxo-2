@@ -27,26 +27,20 @@ type Parcel struct {
 
 // ObjectHeader model
 type ObjectHeader struct {
-	ObjectHash             string               `json:"objectHash"`
-	ObjectSize             uint64               `json:"objectSize"`
-	ExternalReferences     []ExternalReferences `json:"externalReferences"`
-	ExternalReferencesSize uint64               `json:"externalReferencesSize"`
-	Meta                   []Meta               `json:"meta"`
+	ObjectHash              string   `json:"objectHash"`
+	ObjectSize              uint64   `json:"objectSize"`
+	ExternalReferences      []string `json:"externalReferences"`
+	ExternalReferencesSize  uint64   `json:"externalReferencesSize"`
+	Size                    uint64   `json:"size"`
+	RecursiveSizeFirstLevel uint64   `json:"recursiveSizeFirstLevel"`
+	RecursiveSizeTotal      uint64   `json:"recursiveSizeTotal"`
+	Meta                    []Meta   `json:"meta"`
 }
 
 // Meta model
 type Meta struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
-}
-
-// ExternalReferences model
-type ExternalReferences struct {
-	//Index                   uint64 `json:"index"` // FIXME - probably not needed
-	ObjectHeaderHash        string `json:"objectHeaderHash"`
-	Size                    uint64 `json:"size"`
-	RecursiveSizeFirstLevel uint64 `json:"recursiveSizeFirstLevel"`
-	RecursiveSizeFirstTotal uint64 `json:"recursiveSizeTotal"`
 }
 
 // Object model
