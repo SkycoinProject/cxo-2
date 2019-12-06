@@ -75,46 +75,20 @@ func (s *Service) notifyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) requestData(rootObjectHeaderHash string) {
+
 	if s.db.isSaved(rootObjectHeaderHash) {
-		fmt.Printf("received object header hash: %v already exist", rootObjectHeaderHash)
+		fmt.Printf("received root object header hash: %v already exist", rootObjectHeaderHash)
 		return
 	}
 	sPK, sSK := cipher.GenerateKeyPair()
 	client := dmsghttp.DMSGClient(s.config.Discovery, sPK, sSK)
 
-	rootObjectHeader, err := s.fetchObjectHeader(client, rootObjectHeaderHash)
-	if err != nil {
-		fmt.Println("Fetching root object header hash failed due to error: ", err)
-		return
+	if err := s.retrieveHeaders(client, rootObjectHeaderHash); err != nil {
+		fmt.Printf("request data failed: %v", err)
 	}
-	if headerSaveErr := s.db.saveObjectHeader(rootObjectHeaderHash, rootObjectHeader); headerSaveErr != nil {
-		fmt.Printf("Saving object header with hash: %v failed due to error: %v", rootObjectHeaderHash, err)
-		return
-	}
-	missingObjectHeaders := []model.ObjectHeader{rootObjectHeader}
 
-	for _, ref := range rootObjectHeader.ExternalReferences {
-		_, err := s.db.getObjectHeader(ref.ObjectHeaderHash)
-		if err != nil {
-			if err == errCannotFindObjectHeader {
-				objectHeader, err := s.fetchObjectHeader(client, ref.ObjectHeaderHash)
-				if err != nil {
-					fmt.Println("Fetching object header failed due to error: ", err)
-					return
-				}
-
-				if headerSaveErr := s.db.saveObjectHeader(ref.ObjectHeaderHash, objectHeader); headerSaveErr != nil {
-					fmt.Printf("Saving object header with hash: %v failed due to error: %v", ref.ObjectHeaderHash, err)
-					return
-				}
-
-				missingObjectHeaders = append(missingObjectHeaders, objectHeader)
-				continue
-			}
-			fmt.Println("Fetching object header failed due to error: ", err)
-			return
-		}
-	}
+	//TODO populate this with retrieved headers
+	var missingObjectHeaders []model.ObjectHeader
 
 	storagePath := s.config.StoragePath
 	for _, header := range missingObjectHeaders {
@@ -150,18 +124,54 @@ func (s *Service) requestData(rootObjectHeaderHash string) {
 	fmt.Println("Update of local storage finished successfully")
 }
 
-func (s *Service) fetchObjectHeader(client *http.Client, objectHeaderHash string) (model.ObjectHeader, error) {
-	objectHeader := model.ObjectHeader{}
-	url := fmt.Sprint(s.config.TrackerAddress, "/data/object/header?hash=", objectHeaderHash)
+func (s *Service) retrieveHeaders(client *http.Client, headerHashes ...string) error {
+	headers, err := s.fetchObjectHeaders(client, headerHashes...)
+	if err != nil {
+		return fmt.Errorf("fetching object headers with hashes: %v from service failed due to error: %v", headerHashes, err)
+	}
+	var missingHeaderHashes []string
+	for i, header := range headers {
+		for _, ref := range header.ExternalReferences {
+			_, err := s.db.getObjectHeader(ref)
+			if err != nil {
+				if err == errCannotFindObjectHeader {
+					missingHeaderHashes = append(missingHeaderHashes, ref)
+					continue
+				}
+				return fmt.Errorf("fetching object header with hash: %v from db failed due to error: %v", ref, err)
+			}
+		}
+		if err := s.db.saveObjectHeader(headerHashes[i], header); err != nil {
+			return fmt.Errorf("saving object header with hash: %v failed due to error: %v", headerHashes[i], err)
+		}
+	}
 
+	if len(missingHeaderHashes) > 0 {
+		if err := s.retrieveHeaders(client, missingHeaderHashes...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) fetchObjectHeaders(client *http.Client, objectHeaderHashes ...string) ([]model.ObjectHeader, error) {
+	objectHeadersResp := model.GetObjectHeadersResponse{}
+
+	baseUrl := fmt.Sprint(s.config.TrackerAddress, "/data/object/header")
+	params := ""
+	for _, hash := range objectHeaderHashes {
+		params = fmt.Sprint(params, "?hash=", hash)
+	}
+
+	url := fmt.Sprint(baseUrl, params)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return objectHeader, fmt.Errorf("error creating request for object header with hash: %v", objectHeaderHash)
+		return []model.ObjectHeader{}, fmt.Errorf("error creating request for fetching object headers with hashes: %v", objectHeaderHashes)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return objectHeader, fmt.Errorf("request for object header failed due to error: %v", err)
+		return []model.ObjectHeader{}, fmt.Errorf("request for object headers with hashes: %v failed due to error: %v", objectHeaderHashes, err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -171,14 +181,14 @@ func (s *Service) fetchObjectHeader(client *http.Client, objectHeaderHash string
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return objectHeader, fmt.Errorf("error reading data: %v", err)
+		return []model.ObjectHeader{}, fmt.Errorf("error reading data: %v", err)
 	}
 
-	if objectHeaderErr := json.Unmarshal(data, &objectHeader); objectHeaderErr != nil {
-		return objectHeader, fmt.Errorf("error unmarshaling received object with hash: %v", objectHeaderHash)
+	if objectHeaderErr := json.Unmarshal(data, &objectHeadersResp); objectHeaderErr != nil {
+		return []model.ObjectHeader{}, fmt.Errorf("error unmarshaling received object headers response for with hashes: %v", objectHeaderHashes)
 	}
 
-	return objectHeader, nil
+	return objectHeadersResp.ObjectHeaders, nil
 }
 
 func (s *Service) fetchObject(client *http.Client, objectHash string) (model.Object, error) {
