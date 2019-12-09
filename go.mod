@@ -6,6 +6,8 @@ require (
 	github.com/SkycoinProject/dmsg v0.0.0-20191031093634-3e3d5a1b2053
 	github.com/SkycoinProject/dmsg-http v0.0.0-20191106143634-c30f8ddd6736
 	github.com/SkycoinProject/skycoin v0.26.0
+	github.com/asdine/storm/v3 v3.0.0
+	github.com/boltdb/bolt v1.3.1
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
@@ -18,5 +20,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.1-0.20190904163530-85f2b59c4459 // indirect
 	go.etcd.io/bbolt v1.3.4-0.20191001164932-6e135e5d7e3d
+	golang.org/x/sys v0.0.0-20191204072324-ce4227a45e2e // indirect
 	gopkg.in/yaml.v2 v2.2.4
 )
