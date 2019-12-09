@@ -2,7 +2,6 @@ package node
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,25 +9,27 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/SkycoinPro/cxo-2-node/pkg/errors"
 
 	"github.com/SkycoinPro/cxo-2-node/pkg/config"
 	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	"github.com/SkycoinProject/dmsg/cipher"
+	log "github.com/sirupsen/logrus"
 )
 
 // Service - node service model
 type Service struct {
 	config config.Config
-	db     data
+	db     data.Data
 }
 
 // NewService - initialize node service
 func NewService(cfg config.Config) *Service {
 	return &Service{
 		config: cfg,
-		db:     defaultData(),
+		db:     data.DefaultData(),
 	}
 }
 
@@ -55,44 +56,59 @@ func (s *Service) Run() {
 	close(sErr)
 }
 
+//TODO transfer this to be handler for POST method
 func (s *Service) notifyHandler(w http.ResponseWriter, r *http.Request) {
-	keys, ok := r.URL.Query()["hash"]
-	if !ok || len(keys[0]) < 1 {
-		err := errors.New("missing root hash param")
-		fmt.Println("error while receiving new hash from cxo tracker service with error: ", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var rootHash model.RootHash
+	err := json.NewDecoder(r.Body).Decode(&rootHash)
+	if err != nil {
+		log.Error("Error while receiving new root hash: ", err)
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	objectHeaderHash := keys[0]
-	fmt.Println("Received new object header hash from cxo tracker service: ", objectHeaderHash)
+
+	fmt.Println("Received new root hash from cxo tracker service: ", rootHash.Key())
 
 	go func() {
 		time.Sleep(3 * time.Second)
-		s.requestData(objectHeaderHash)
+		s.requestData(rootHash)
 	}()
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Service) requestData(rootObjectHeaderHash string) {
-
-	if s.db.isSaved(rootObjectHeaderHash) {
-		fmt.Printf("received root object header hash: %v already exist", rootObjectHeaderHash)
+func (s *Service) requestData(rootHash model.RootHash) {
+	_, err := s.db.GetRootHash(rootHash.Key())
+	if err == nil {
+		fmt.Printf("received root hash with key: %v already exist", rootHash.Key())
 		return
 	}
+	if err != errors.ErrCannotFindRootHash {
+		fmt.Print(err.Error())
+		return
+	}
+
+	if err := s.db.SaveRootHash(rootHash); err != nil {
+		fmt.Printf("saving root hash with key: %v failed due to error: %v", rootHash.Key(), err)
+		return
+	}
+
 	sPK, sSK := cipher.GenerateKeyPair()
 	client := dmsghttp.DMSGClient(s.config.Discovery, sPK, sSK)
 
-	if err := s.retrieveHeaders(client, rootObjectHeaderHash); err != nil {
-		fmt.Printf("request data failed: %v", err)
+	if err := s.retrieveHeaders(client, rootHash, rootHash.ObjectHeaderHash); err != nil {
+		fmt.Printf("retrieveing headers failed due to error: %v", err)
+		return
 	}
 
-	//TODO populate this with retrieved headers
-	var missingObjectHeaders []model.ObjectHeader
+	newObjectHeaders, err := s.db.FindNewObjectHeaders(rootHash.Key(), rootHash.Timestamp)
+	if err != nil {
+		fmt.Printf("fetching new headers failed due to error: %v", err)
+		return
+	}
 
 	storagePath := s.config.StoragePath
-	for _, header := range missingObjectHeaders {
-		name := rootObjectHeaderHash
+	for _, header := range newObjectHeaders {
+		var name string
 		isDirectory := false
 		for _, meta := range header.Meta {
 			if meta.Key == "type" && meta.Value == "directory" {
@@ -112,7 +128,7 @@ func (s *Service) requestData(rootObjectHeaderHash string) {
 			if err != nil {
 				fmt.Printf("error writing file to local storage - can't fetch content for file %s", name)
 			} else {
-				err = s.db.saveObject(header.ObjectHash, filePath)
+				err = s.db.SaveObjectInfo(header.ObjectHash, filePath)
 				if err != nil {
 					fmt.Print("error saving object in db with hash: ", header.ObjectHash)
 				}
@@ -121,10 +137,12 @@ func (s *Service) requestData(rootObjectHeaderHash string) {
 		}
 	}
 
+	//TODO remove unneeded headers and objects
+
 	fmt.Println("Update of local storage finished successfully")
 }
 
-func (s *Service) retrieveHeaders(client *http.Client, headerHashes ...string) error {
+func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, headerHashes ...string) error {
 	headers, err := s.fetchObjectHeaders(client, headerHashes...)
 	if err != nil {
 		return fmt.Errorf("fetching object headers with hashes: %v from service failed due to error: %v", headerHashes, err)
@@ -132,22 +150,28 @@ func (s *Service) retrieveHeaders(client *http.Client, headerHashes ...string) e
 	var missingHeaderHashes []string
 	for i, header := range headers {
 		for _, ref := range header.ExternalReferences {
-			_, err := s.db.getObjectHeader(ref)
+			_, err := s.db.GetObjectHeader(ref)
 			if err != nil {
-				if err == errCannotFindObjectHeader {
+				if err == errors.ErrCannotFindObjectHeader {
 					missingHeaderHashes = append(missingHeaderHashes, ref)
 					continue
 				}
 				return fmt.Errorf("fetching object header with hash: %v from db failed due to error: %v", ref, err)
+			} else {
+				// update existing object header to newest sequence
+				if err := s.db.UpdateObjectHeaderRootHashKey(ref, rootHash.Key()); err != nil {
+					return fmt.Errorf("updating object header with hash: %v failed due to error: %v", ref, err)
+				}
 			}
 		}
-		if err := s.db.saveObjectHeader(headerHashes[i], header); err != nil {
+		// save missing object header
+		if err := s.db.SaveObjectHeader(headerHashes[i], rootHash, header); err != nil {
 			return fmt.Errorf("saving object header with hash: %v failed due to error: %v", headerHashes[i], err)
 		}
 	}
 
 	if len(missingHeaderHashes) > 0 {
-		if err := s.retrieveHeaders(client, missingHeaderHashes...); err != nil {
+		if err := s.retrieveHeaders(client, rootHash, missingHeaderHashes...); err != nil {
 			return err
 		}
 	}
@@ -157,13 +181,13 @@ func (s *Service) retrieveHeaders(client *http.Client, headerHashes ...string) e
 func (s *Service) fetchObjectHeaders(client *http.Client, objectHeaderHashes ...string) ([]model.ObjectHeader, error) {
 	objectHeadersResp := model.GetObjectHeadersResponse{}
 
-	baseUrl := fmt.Sprint(s.config.TrackerAddress, "/data/object/header")
-	params := ""
-	for _, hash := range objectHeaderHashes {
-		params = fmt.Sprint(params, "?hash=", hash)
+	baseUrl := fmt.Sprint(s.config.TrackerAddress, "/data/object/header?hash=", objectHeaderHashes[0])
+	additionalParams := ""
+	for _, hash := range objectHeaderHashes[1:] {
+		additionalParams = fmt.Sprint(additionalParams, "&hash=", hash)
 	}
 
-	url := fmt.Sprint(baseUrl, params)
+	url := fmt.Sprint(baseUrl, additionalParams)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return []model.ObjectHeader{}, fmt.Errorf("error creating request for fetching object headers with hashes: %v", objectHeaderHashes)

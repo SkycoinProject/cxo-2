@@ -18,11 +18,11 @@ import (
 
 func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.Command {
 	publishDataCmd := &cobra.Command{
-		Short:        "Publish new data to the CXO Tracker service",
-		Use:          "publish [flags] [path_to_file]",
-		Long:         "Publish new data to the CXO Tracker service",
-		SilenceUsage: true,
-		Args:         cobra.MinimumNArgs(1),
+		Short:                 "Publish new data to the CXO Tracker service",
+		Use:                   "publish [flags] [path_to_file]",
+		Long:                  "Publish new data to the CXO Tracker service",
+		SilenceUsage:          true,
+		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			filePath := args[0]

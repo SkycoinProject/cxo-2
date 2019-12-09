@@ -25,7 +25,7 @@ func NewTrackerClient(cfg config.Config) *TrackerClient {
 	return &TrackerClient{
 		client:           dmsghttp.DMSGClient(cfg.Discovery, sPK, sSK),
 		trackerAddress:   cfg.TrackerAddress,
-		subscribeAddress: fmt.Sprintf("%v:%v/notify?hash=", cfg.PubKey.Hex(), cfg.Port), //FIXME - read route from node service
+		subscribeAddress: fmt.Sprintf("%v:%v/notify", cfg.PubKey.Hex(), cfg.Port), //FIXME - read route from node service
 	}
 }
 

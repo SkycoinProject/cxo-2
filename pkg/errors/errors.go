@@ -1,0 +1,8 @@
+package errors
+
+import "errors"
+
+var (
+	ErrCannotFindObjectHeader = errors.New("cannot find object header by hash")
+	ErrCannotFindRootHash     = errors.New("cannot find root hash by key")
+)
