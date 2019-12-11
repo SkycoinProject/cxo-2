@@ -107,13 +107,12 @@ func (s *Service) requestData(rootHash model.RootHash) {
 	}
 
 	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, s.config.StoragePath, newObjectHeaderHashes, client)
-
-	//TODO remove unneeded headers and objects
+	s.removeUnreferencedFiles(rootHash.Key())
 
 	fmt.Println("Update of local storage finished successfully")
 }
 
-func (s Service) storeHeaderOnPath(headerHash, path string, newHeaders map[string]struct{}, client *http.Client) {
+func (s *Service) storeHeaderOnPath(headerHash, path string, newHeaders map[string]struct{}, client *http.Client) {
 	header, err := s.db.GetObjectHeader(headerHash)
 	name := name(header)
 	if err != nil {
@@ -131,7 +130,7 @@ func (s Service) storeHeaderOnPath(headerHash, path string, newHeaders map[strin
 		}
 		err = s.db.SaveObjectInfo(headerHash, path)
 		if err != nil {
-			fmt.Print("error saving object in db with hash: ", header.ObjectHash)
+			fmt.Printf("saving object in db with hash: %v failed with error: %v", headerHash, err)
 		}
 
 		for _, ref := range header.ExternalReferences {
@@ -152,11 +151,10 @@ func (s Service) storeHeaderOnPath(headerHash, path string, newHeaders map[strin
 	} else {
 		err = s.db.SaveObjectInfo(header.ObjectHash, filePath)
 		if err != nil {
-			fmt.Print("error saving object in db with hash: ", header.ObjectHash)
+			fmt.Printf("saving object in db with hash: %v failed with error: %v", header.ObjectHash, err)
 		}
 		createFile(filePath, object.Data)
 	}
-
 }
 
 func name(oh model.ObjectHeader) string {
@@ -296,5 +294,13 @@ func createFile(path string, content []byte) {
 	}
 	if err = f.Sync(); err != nil {
 		panic(err)
+	}
+}
+
+func (s *Service) removeUnreferencedFiles(rootHashKey string) {
+	for _, path := range s.db.RemoveUnreferencedObjects(rootHashKey) {
+		if err := os.RemoveAll(path); err != nil {
+			fmt.Printf("Deleting file: %v failed due to error: %v", path, err)
+		}
 	}
 }

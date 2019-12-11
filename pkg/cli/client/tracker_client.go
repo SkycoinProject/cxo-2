@@ -70,8 +70,12 @@ func (t *TrackerClient) PublishData(request model.PublishDataRequest) error {
 	if err != nil {
 		return fmt.Errorf("publish data request failed due to error: %v", err)
 	}
+	if resp.StatusCode == 201 {
+		fmt.Println("New data published successfully...")
+	} else {
+		fmt.Println("Failed to publish new data.", resp.Status)
+	}
 
-	fmt.Println("Publish data response: ", resp.Status)
 	return nil
 }
 

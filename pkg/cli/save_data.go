@@ -55,7 +55,6 @@ func publishDataCmd(client *client.TrackerClient, config config.Config) *cobra.C
 				return err
 			}
 
-			fmt.Println("New data published successfully...")
 			return nil
 		},
 	}

@@ -19,6 +19,7 @@ type Data interface {
 	GetRootHash(hash string) (model.RootHash, error)
 	GetObjectHeader(hash string) (model.ObjectHeader, error)
 	FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error)
+	RemoveUnreferencedObjects(rootHashKey string) []string
 }
 
 type store struct {
@@ -48,6 +49,22 @@ func (s store) SaveObjectHeader(hash string, rootHash model.RootHash, objectHead
 }
 
 func (s store) SaveObjectInfo(hash, path string) error {
+	var info objectInfo
+	if err := s.db.One("Path", path, &info); err != nil {
+		if err != storm.ErrNotFound {
+			log.Errorf("could not find previous object info with path: %v due to error: %v", path, err)
+			return err
+		}
+	}
+
+	if info.ID != "" {
+		// delete previous record for same path in order not to delete path on clean up later on
+		if err := s.db.DeleteStruct(&info); err != nil {
+			log.Errorf("could not delete previous object info with path: %v due to error: %v", path, err)
+			return err
+		}
+	}
+
 	return s.db.Save(&objectInfo{
 		ID:   hash,
 		Path: path,
@@ -104,4 +121,53 @@ func (s store) FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time
 	}
 
 	return headerHashes, nil
+}
+
+// Remove headers and object infos and return slice of paths for dirs and files that should be removed
+func (s store) RemoveUnreferencedObjects(latestRootHashKey string) []string {
+	var objectHeaderDAOs []objectHeaderDAO
+	// selecting all headers that are not on last sequence
+	if err := s.db.Select(q.Not(q.Eq("RootHashKey", latestRootHashKey))).Find(&objectHeaderDAOs); err != nil {
+		if err != storm.ErrNotFound {
+			log.Errorf("could not retrieve unreferenced object headers due to error: %v", err)
+			return []string{}
+		}
+	}
+
+	var paths []string
+	for _, headerDAO := range objectHeaderDAOs {
+		var objectInfoID string
+		if isDirectory(headerDAO.ObjectHeader) {
+			objectInfoID = headerDAO.ID
+		} else {
+			objectInfoID = headerDAO.ObjectHeader.ObjectHash
+		}
+
+		var objectInfo objectInfo
+		if err := s.db.One("ID", objectInfoID, &objectInfo); err != nil {
+			if err != storm.ErrNotFound {
+				log.Errorf("Fetching object info with hash: %v failed with error: %v", headerDAO.ID, err)
+			}
+		} else {
+			paths = append(paths, objectInfo.Path)
+			if err := s.db.DeleteStruct(&objectInfo); err != nil {
+				log.Errorf("Deleting object info with hash: %v failed with error: %v", objectInfo.ID, err)
+			}
+
+		}
+		if err := s.db.DeleteStruct(&headerDAO); err != nil {
+			log.Errorf("Deleting object header with hash: %v failed with error: %v", headerDAO.ID, err)
+		}
+	}
+
+	return paths
+}
+
+func isDirectory(oh model.ObjectHeader) bool {
+	for _, meta := range oh.Meta {
+		if meta.Key == "type" && meta.Value == "directory" {
+			return true
+		}
+	}
+	return false
 }

@@ -20,5 +20,5 @@ type objectHeaderDAO struct {
 
 type objectInfo struct {
 	ID   string
-	Path string
+	Path string `storm:"index"`
 }
