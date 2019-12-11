@@ -18,7 +18,7 @@ type Data interface {
 	UpdateObjectHeaderRootHashKey(hash string, rootHashKey string) error
 	GetRootHash(hash string) (model.RootHash, error)
 	GetObjectHeader(hash string) (model.ObjectHeader, error)
-	FindNewObjectHeaders(rootHashKey string, timestamp time.Time) ([]model.ObjectHeader, error)
+	FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error)
 }
 
 type store struct {
@@ -88,20 +88,20 @@ func (s store) GetObjectHeader(hash string) (model.ObjectHeader, error) {
 	return objectHeaderDAO.ObjectHeader, err
 }
 
-func (s store) FindNewObjectHeaders(rootHashKey string, timestamp time.Time) ([]model.ObjectHeader, error) {
+func (s store) FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error) {
 	var objectHeaderDAOs []objectHeaderDAO
 	if err := s.db.Select(q.Eq("RootHashKey", rootHashKey), q.Eq("Timestamp", timestamp)).Find(&objectHeaderDAOs); err != nil {
 		if err == storm.ErrNotFound {
-			return []model.ObjectHeader{}, nil
+			return make(map[string]struct{}, 0), nil
 		}
 		log.Errorf("could not retrieve object headers with root hash key: %v and timestamp %v due to error: %v", rootHashKey, timestamp, err)
-		return []model.ObjectHeader{}, err
+		return make(map[string]struct{}, 0), err
 	}
 
-	var objectHeaders []model.ObjectHeader
+	headerHashes := make(map[string]struct{}, len(objectHeaderDAOs))
 	for _, dao := range objectHeaderDAOs {
-		objectHeaders = append(objectHeaders, dao.ObjectHeader)
+		headerHashes[dao.ID] = struct{}{}
 	}
 
-	return objectHeaders, nil
+	return headerHashes, nil
 }

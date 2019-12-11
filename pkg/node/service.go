@@ -100,46 +100,81 @@ func (s *Service) requestData(rootHash model.RootHash) {
 		return
 	}
 
-	newObjectHeaders, err := s.db.FindNewObjectHeaders(rootHash.Key(), rootHash.Timestamp)
+	newObjectHeaderHashes, err := s.db.FindNewObjectHeaderHashes(rootHash.Key(), rootHash.Timestamp)
 	if err != nil {
 		fmt.Printf("fetching new headers failed due to error: %v", err)
 		return
 	}
 
-	storagePath := s.config.StoragePath
-	for _, header := range newObjectHeaders {
-		var name string
-		isDirectory := false
-		for _, meta := range header.Meta {
-			if meta.Key == "type" && meta.Value == "directory" {
-				isDirectory = true
-			} else if meta.Key == "name" {
-				name = meta.Value
-			}
-		}
-		if isDirectory {
-			storagePath = filepath.Join(storagePath, name)
-			if _, err := os.Stat(storagePath); os.IsNotExist(err) {
-				_ = os.Mkdir(storagePath, os.ModePerm)
-			}
-		} else {
-			filePath := filepath.Join(storagePath, name)
-			object, err := s.fetchObject(client, header.ObjectHash)
-			if err != nil {
-				fmt.Printf("error writing file to local storage - can't fetch content for file %s", name)
-			} else {
-				err = s.db.SaveObjectInfo(header.ObjectHash, filePath)
-				if err != nil {
-					fmt.Print("error saving object in db with hash: ", header.ObjectHash)
-				}
-				createFile(filePath, object.Data)
-			}
-		}
-	}
+	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, s.config.StoragePath, newObjectHeaderHashes, client)
 
 	//TODO remove unneeded headers and objects
 
 	fmt.Println("Update of local storage finished successfully")
+}
+
+func (s Service) storeHeaderOnPath(headerHash, path string, newHeaders map[string]struct{}, client *http.Client) {
+	header, err := s.db.GetObjectHeader(headerHash)
+	name := name(header)
+	if err != nil {
+		fmt.Printf("Unable to store header %s due to error %v", headerHash, err)
+		return
+	}
+	if isDirectory(header) {
+		if _, contains := newHeaders[headerHash]; !contains {
+			return
+		}
+
+		path = filepath.Join(path, name)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			_ = os.Mkdir(path, os.ModePerm)
+		}
+		err = s.db.SaveObjectInfo(headerHash, path)
+		if err != nil {
+			fmt.Print("error saving object in db with hash: ", header.ObjectHash)
+		}
+
+		for _, ref := range header.ExternalReferences {
+			s.storeHeaderOnPath(ref, path, newHeaders, client)
+		}
+
+		return
+	}
+
+	if _, contains := newHeaders[headerHash]; !contains {
+		return
+	}
+
+	filePath := filepath.Join(path, name)
+	object, err := s.fetchObject(client, header.ObjectHash)
+	if err != nil {
+		fmt.Printf("error writing file to local storage - can't fetch content for file %s", name)
+	} else {
+		err = s.db.SaveObjectInfo(header.ObjectHash, filePath)
+		if err != nil {
+			fmt.Print("error saving object in db with hash: ", header.ObjectHash)
+		}
+		createFile(filePath, object.Data)
+	}
+
+}
+
+func name(oh model.ObjectHeader) string {
+	for _, meta := range oh.Meta {
+		if meta.Key == "name" {
+			return meta.Value
+		}
+	}
+	return ""
+}
+
+func isDirectory(oh model.ObjectHeader) bool {
+	for _, meta := range oh.Meta {
+		if meta.Key == "type" && meta.Value == "directory" {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, headerHashes ...string) error {
