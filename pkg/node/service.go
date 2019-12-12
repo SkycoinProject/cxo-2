@@ -56,8 +56,11 @@ func (s *Service) Run() {
 	close(sErr)
 }
 
-//TODO transfer this to be handler for POST method
 func (s *Service) notifyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.NotFound(w, r)
+		return
+	}
 	var rootHash model.RootHash
 	err := json.NewDecoder(r.Body).Decode(&rootHash)
 	if err != nil {
