@@ -109,10 +109,23 @@ func (s *Service) requestData(rootHash model.RootHash) {
 		return
 	}
 
-	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, s.config.StoragePath, newObjectHeaderHashes, client)
+	path := s.createStoragePathForPublisher(rootHash.Publisher)
+	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, path, newObjectHeaderHashes, client)
 	s.removeUnreferencedFiles(rootHash.Key())
 
 	fmt.Println("Update of local storage finished successfully")
+}
+
+func (s *Service) createStoragePathForPublisher(publisher string) string {
+	publisherStoragePath := filepath.Join(s.config.StoragePath, publisher)
+	if _, err := os.Stat(publisherStoragePath); os.IsNotExist(err) {
+		if errDir := os.Mkdir(publisherStoragePath, os.ModePerm); errDir != nil {
+			fmt.Printf("unable to prepare storage directory: %v due to err: %v", publisherStoragePath, err)
+			panic(err)
+		}
+	}
+
+	return publisherStoragePath
 }
 
 func (s *Service) storeHeaderOnPath(headerHash, path string, newHeaders map[string]struct{}, client *http.Client) {
