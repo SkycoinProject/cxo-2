@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  # tracker:
+  #   build: .
+  #   container_name: "tracker"
+  #   restart: always
+  #   ports:
+  #     - "8087:8087" # tcp host
+  #     - "8084:8084" # dmsg host
+  #   tty: true
+  #   stdin_open: true
+  #   volumes:
+  #     - ./config/cxo-config.toml:/cxo-config.toml
+  #     - ./keypairs/tracker.txt:/cxo-tracker/keys.txt
+  #     - ./executables/tracker:/usr/local/bin/tracker
+  #   command: tracker
+
+  node-1:
+    build: .
+    container_name: "node-1"
+    # depends_on:
+    #   - "tracker"
+    #restart: always
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./executables/node:/usr/local/bin/cxo-node
+      - ./executables/node-cli:/usr/local/bin/cxo-node-cli
+      - ./executables/test-runner:/usr/local/bin/test-runner
+      - ./content/node1-content1-version1.txt:/content/node1-content1-version1.txt
+      - ./config/.cxo-node:/root/.cxo-node
+      - ./files/node-1:/root/.cxo-node/files
+      - ./runners/node1.json:/runner-config.json
+    command: /bin/sh -c 'test-runner' # && cxo-node
