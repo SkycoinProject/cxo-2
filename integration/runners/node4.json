@@ -9,14 +9,7 @@
         {
             "actions": [
                 "subscribe",
-                "0372d7b0bbabd74f9272e5260f4d3bfa41740bda956cc2a4850c47818d3ce87cb7"
-            ],
-            "sleepInSeconds": 25
-        },
-        {
-            "actions": [
-                "publish",
-                "/content/node1-content1.txt"
+                "0369b16e07607afa9861ab422e656e14d0dd7c972f8fbcf8055883ca8d866f1306"
             ],
             "sleepInSeconds": 25
         }

@@ -3,20 +3,13 @@
         {
             "actions": [
                 "subscribe", 
-                "02fa97d21445e74c2dd203fbec3f83fedfd0c35c5fc5aa9e8a8e3b6056f6493d84"],
+                "02766392a3cbd3d4ce410fa6c26e0bf131770d587d134d96de2a4e5c20a84600f9"],
             "sleepInSeconds": 5
         },
         {
             "actions": [
-                "subscribe",
-                "0372d7b0bbabd74f9272e5260f4d3bfa41740bda956cc2a4850c47818d3ce87cb7"
-            ],
-            "sleepInSeconds": 25
-        },
-        {
-            "actions": [
                 "publish",
-                "/content/node1-content1.txt"
+                "/content"
             ],
             "sleepInSeconds": 25
         }

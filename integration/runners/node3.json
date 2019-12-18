@@ -2,23 +2,24 @@
     "commands": [
         {
             "actions": [
-                "subscribe", 
-                "02fa97d21445e74c2dd203fbec3f83fedfd0c35c5fc5aa9e8a8e3b6056f6493d84"],
-            "sleepInSeconds": 5
-        },
-        {
-            "actions": [
-                "subscribe",
-                "0372d7b0bbabd74f9272e5260f4d3bfa41740bda956cc2a4850c47818d3ce87cb7"
+                "publish",
+                "/content/node3-content1.txt"
             ],
             "sleepInSeconds": 25
         },
         {
             "actions": [
                 "publish",
-                "/content/node1-content1.txt"
+                "/content/node3-content1.txt"
             ],
-            "sleepInSeconds": 25
-        }
+            "sleepInSeconds": 5
+        },
+        {
+            "actions": [
+                "publish",
+                "/content/node3-content2.txt"
+            ],
+            "sleepInSeconds": 5
+        }                
     ]
 }
