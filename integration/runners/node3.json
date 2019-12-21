@@ -5,21 +5,21 @@
                 "publish",
                 "/content/node3-content1.txt"
             ],
+            "sleepInSeconds": 20
+        },
+        {
+            "actions": [
+                "publish",
+                "/content/node3-content2"
+            ],
             "sleepInSeconds": 25
         },
         {
             "actions": [
                 "publish",
-                "/content/node3-content1.txt"
+                "/content/node3-content2-version2"
             ],
-            "sleepInSeconds": 5
-        },
-        {
-            "actions": [
-                "publish",
-                "/content/node3-content2.txt"
-            ],
-            "sleepInSeconds": 5
+            "sleepInSeconds": 1125
         }                
     ]
 }

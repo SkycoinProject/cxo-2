@@ -22,87 +22,79 @@ services:
     # depends_on:
     #   - "tracker"
     #restart: always
-    ports:
-      - "8091:8091"
     volumes:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
-      - ./content/node1-content1-version1.txt:/content/node1-content1-version1.txt #Check if version1 is good here since publish contains path /content/node1-content1.txt. If so, align other nodes too. 
       - ./config/.cxo-node:/root/.cxo-node
+      - ./keypairs/node-1.txt:/root/.cxo-node/keys.txt
       - ./files/node-1:/root/.cxo-node/files
+      - ./content/node1-content1.txt:/content/node1-content1.txt
       - ./runners/node1.json:/runner-config.json
-    command: /bin/sh -c 'test-runner' # && cxo-node
+    command: /bin/sh -c 'cxo-node & test-runner' # && cxo-node
 
   node-2:
     build: .
     container_name: "node-2"
     # depends_on:
     #   - "tracker"
-    #restart: always
-    ports:
-      - "8091:8091"
     volumes:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
-      - ./content/node2-content1-version1.txt:/content/node2-content1-version1.txt
-      - ./content/node2-content2-version1.txt:/content/node2-content1-version2.txt
       - ./config/.cxo-node:/root/.cxo-node
+      - ./keypairs/node-2.txt:/root/.cxo-node/keys.txt
       - ./files/node-2:/root/.cxo-node/files
+      - ./content/node2-content1.txt:/content/node2-content1.txt
+      - ./content/node2-content1-version2.txt:/content/node2-content1-version2.txt
       - ./runners/node2.json:/runner-config.json
-    command: /bin/sh -c 'test-runner' # && cxo-node
+    command: /bin/sh -c 'cxo-node & test-runner'
     
   node-3:
     build: .
     container_name: "node-3"
     # depends_on:
     #   - "tracker"
-    #restart: always
-    ports:
-      - "8091:8091"
     volumes:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
-      - ./content/node3-content1-version1.txt:/content/node3-content1-version1.txt
-      - ./content/node3-content2-version1.txt:/content/node3-content2-version1.txt
       - ./config/.cxo-node:/root/.cxo-node
+      - ./keypairs/node-3.txt:/root/.cxo-node/keys.txt
       - ./files/node-2:/root/.cxo-node/files
-      - ./runners/node2.json:/runner-config.json
-    command: /bin/sh -c 'test-runner' # && cxo-node
+      - ./content/node3-content1.txt:/content/node3-content1.txt
+      - ./content/node3-content2:/content/node3-content2
+      - ./content/node3-content2-version2:/content/node3-content2-version2
+      - ./runners/node3.json:/runner-config.json
+    command: /bin/sh -c 'cxo-node & test-runner'
 
   node-4:
     build: .
     container_name: "node-4"
     # depends_on:
     #   - "tracker"
-    #restart: always
-    ports:
-      - "8091:8091"
     volumes:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
       - ./config/.cxo-node:/root/.cxo-node
+      - ./keypairs/node-4.txt:/root/.cxo-node/keys.txt
       - ./files/node-4:/root/.cxo-node/files
       - ./runners/node4.json:/runner-config.json
-    command: /bin/sh -c 'test-runner' # && cxo-node
+    command: /bin/sh -c 'cxo-node & test-runner'
 
   node-5:
     build: .
     container_name: "node-5"
     # depends_on:
     #   - "tracker"
-    #restart: always
-    ports:
-      - "8091:8091"
     volumes:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
-      - ./content:/content #empty directory
       - ./config/.cxo-node:/root/.cxo-node
+      - ./keypairs/node-5.txt:/root/.cxo-node/keys.txt
       - ./files/node-5:/root/.cxo-node/files
+      - ./content/empty:/content/empty
       - ./runners/node5.json:/runner-config.json
-    command: /bin/sh -c 'test-runner' # && cxo-node
+    command: /bin/sh -c 'cxo-node & test-runner'

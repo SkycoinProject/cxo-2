@@ -9,9 +9,9 @@
         {
             "actions": [
                 "publish",
-                "/content"
+                "/content/empty"
             ],
-            "sleepInSeconds": 25
+            "sleepInSeconds": 1125
         }
     ]
 }

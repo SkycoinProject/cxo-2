@@ -3,9 +3,9 @@
         {
             "actions": [
                 "publish",
-                "/content/node2-content1-version1.txt"
+                "/content/node2-content1.txt"
             ],
-            "sleepInSeconds": 5
+            "sleepInSeconds": 25
         },
         {
             "actions": [
@@ -19,7 +19,7 @@
                 "publish",
                 "/content/node2-content1-version2.txt"
             ],
-            "sleepInSeconds": 25
+            "sleepInSeconds": 1125
         }
     ]
 }

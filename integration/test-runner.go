@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"time"
 	"strings"
+	"time"
 )
 
 const (
@@ -17,19 +17,10 @@ const (
 
 func main() {
 	fmt.Println("starting up the test runner")
-	go func() {
-		fmt.Println("starting up the cxo node")
-		cmd := exec.Command("cxo-node") //TODO consider sending log to output
-		if err := cmd.Run(); err != nil {
-			fmt.Println("cxo node failed")
-			log.Fatal(err)
-		}
-	}()
 	conf := readConfig(defaultConfigPath)
 	waitOnNodeToBeUp()
 
 	runCommands(conf)
-	keepRunningOnEmpty()
 }
 
 func readConfig(path string) config {
@@ -57,12 +48,13 @@ func waitOnNodeToBeUp() {
 func runCommands(conf config) {
 	for _, command := range conf.Commands {
 		if len(command.Actions) > 0 {
-			if command.Actions[0] == "publish" {
-				newContent := readContent(command.Actions[1])
-				newPath := cutVersionPart(command.Actions[1])
-				command.Actions[1] = newPath
-				updateFileContent(newPath, newContent)
-			}
+			// TODO (marko) update with the latest example including directory
+			// if command.Actions[0] == "publish" {
+			// 	newContent := readContent(command.Actions[1])
+			// 	newPath := cutVersionPart(command.Actions[1])
+			// 	command.Actions[1] = newPath
+			// 	updateFileContent(newPath, newContent)
+			// }
 			fmt.Println("running commands: cxo-node-cli ", command.Actions)
 			cmd := exec.Command("cxo-node-cli", command.Actions...)
 			if err := cmd.Run(); err != nil {
@@ -75,13 +67,7 @@ func runCommands(conf config) {
 	}
 }
 
-func keepRunningOnEmpty() {
-	for {
-		time.Sleep(time.Second)
-	}
-}
-
-func updateFileContent(path, content string){
+func updateFileContent(path, content string) {
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0777)
 
 	if err != nil {
@@ -100,7 +86,7 @@ func updateFileContent(path, content string){
 	}
 }
 
-func cutVersionPart(inpath string) string{
+func cutVersionPart(inpath string) string {
 	if strings.Contains(inpath, "-version") {
 		splitedCommands := strings.Split(inpath, "-version")
 		return splitedCommands[0] + ".txt"
@@ -109,16 +95,16 @@ func cutVersionPart(inpath string) string{
 	return inpath
 }
 
-func readContent(path string) string{
+func readContent(path string) string {
 	file, err := os.Open(path)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
 	b, err := ioutil.ReadAll(file)
 	if err != nil {
-        log.Fatal(err)
+		log.Fatal(err)
 		return ""
 	}
 
