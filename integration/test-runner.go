@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -50,10 +51,10 @@ func runCommands(conf config) {
 		if len(command.Actions) > 0 {
 			if command.Actions[0] == "publish" && strings.Contains(command.Actions[1], "-version") {
 				newPath := cutVersionPart(command.Actions[1])
-				if strings.Contains(newPath, ".txt") {	//File
+				if strings.Contains(newPath, ".txt") { //File
 					newContent := readContent(newPath)
 					updateFileContent(newPath, newContent)
-				} else {	//Directory
+				} else { //Directory
 					removeContents(newPath)
 					err := copyFolder(command.Actions[1], newPath)
 					if err != nil {
@@ -125,21 +126,21 @@ func removeContents(dir string) {
 		os.Mkdir(dir, os.ModeDir)
 	}
 
-    // Open the directory and read all its files.
-    dirRead, _ := os.Open(dir)
-    dirFiles, _ := dirRead.Readdir(0)
+	// Open the directory and read all its files.
+	dirRead, _ := os.Open(dir)
+	dirFiles, _ := dirRead.Readdir(0)
 
-    // Loop over the directory's files.
-    for index := range(dirFiles) {
-        fileHere := dirFiles[index]
+	// Loop over the directory's files.
+	for index := range dirFiles {
+		fileHere := dirFiles[index]
 
-        // Get name of file and its full path.
-        nameHere := fileHere.Name()
-        fullPath := dir + nameHere
+		// Get name of file and its full path.
+		nameHere := fileHere.Name()
+		fullPath := dir + nameHere
 
-        // Remove the file.
-        os.Remove(fullPath)
-    }
+		// Remove the file.
+		os.Remove(fullPath)
+	}
 }
 
 func copyFolder(source string, dest string) (err error) {
