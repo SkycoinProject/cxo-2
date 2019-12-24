@@ -14,9 +14,9 @@ type RootHash struct {
 	ObjectHeaderHash string    `json:"objectHeaderHash"`
 }
 
-// Key returns parcel key constructed in "sequence_publisher" format
+// Key returns parcel key constructed in "publisher_sequence" format
 func (r *RootHash) Key() string {
-	return fmt.Sprintf("%v_%s", r.Sequence, r.Publisher)
+	return fmt.Sprintf("%s_%v", r.Publisher, r.Sequence)
 }
 
 // Parcel model
