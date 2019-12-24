@@ -1,6 +1,7 @@
 package data
 
 import (
+	"strings"
 	"time"
 
 	"github.com/SkycoinPro/cxo-2-node/pkg/errors"
@@ -18,8 +19,9 @@ type Data interface {
 	UpdateObjectHeaderRootHashKey(hash string, rootHashKey string) error
 	GetRootHash(hash string) (model.RootHash, error)
 	GetObjectHeader(hash string) (model.ObjectHeader, error)
+	GetObjectPath(hash string) (string, error)
 	FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error)
-	RemoveUnreferencedObjects(rootHashKey string) []string
+	RemoveUnreferencedObjects(rootHashKey string, isValidSignature bool) []string
 }
 
 type store struct {
@@ -105,6 +107,21 @@ func (s store) GetObjectHeader(hash string) (model.ObjectHeader, error) {
 	return objectHeaderDAO.ObjectHeader, err
 }
 
+func (s store) GetObjectPath(hash string) (string, error) {
+	objectInfo := objectInfo{}
+	var err error
+	if dbError := s.db.One("ID", hash, &objectInfo); dbError != nil {
+		if dbError == storm.ErrNotFound {
+			err = errors.ErrCannotFindObjectPath
+		} else {
+			log.Errorf("could not retrieve object path with hash: %v due to error: %v", hash, err)
+			err = dbError
+		}
+	}
+
+	return objectInfo.Path, err
+}
+
 func (s store) FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error) {
 	var objectHeaderDAOs []objectHeaderDAO
 	if err := s.db.Select(q.Eq("RootHashKey", rootHashKey), q.Eq("Timestamp", timestamp)).Find(&objectHeaderDAOs); err != nil {
@@ -124,18 +141,33 @@ func (s store) FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time
 }
 
 // Remove headers and object infos and return slice of paths for dirs and files that should be removed
-func (s store) RemoveUnreferencedObjects(latestRootHashKey string) []string {
+func (s store) RemoveUnreferencedObjects(latestRootHashKey string, isValidSignature bool) []string {
 	var objectHeaderDAOs []objectHeaderDAO
-	// selecting all headers that are not on last sequence
-	if err := s.db.Select(q.Not(q.Eq("RootHashKey", latestRootHashKey))).Find(&objectHeaderDAOs); err != nil {
+	pubKey := strings.Split(latestRootHashKey, "_")[0]
+
+	//selecting all headers for specific pub key
+	if err := s.db.Prefix("RootHashKey", pubKey, &objectHeaderDAOs); err != nil {
 		if err != storm.ErrNotFound {
 			log.Errorf("could not retrieve unreferenced object headers due to error: %v", err)
 			return []string{}
 		}
 	}
 
+	var unreferencedObjectHeaderDAOs []objectHeaderDAO
+	// if signature is valid we are removing every object that is not on latest sequence
+	if isValidSignature {
+		for _, h := range objectHeaderDAOs {
+			if latestRootHashKey != h.RootHashKey {
+				unreferencedObjectHeaderDAOs = append(unreferencedObjectHeaderDAOs, h)
+			}
+		}
+	} else {
+		// if signature is not valid we are removing all objects for specific pub key
+		unreferencedObjectHeaderDAOs = objectHeaderDAOs
+	}
+
 	var paths []string
-	for _, headerDAO := range objectHeaderDAOs {
+	for _, headerDAO := range unreferencedObjectHeaderDAOs {
 		var objectInfoID string
 		if isDirectory(headerDAO.ObjectHeader) {
 			objectInfoID = headerDAO.ID
@@ -157,6 +189,15 @@ func (s store) RemoveUnreferencedObjects(latestRootHashKey string) []string {
 		}
 		if err := s.db.DeleteStruct(&headerDAO); err != nil {
 			log.Errorf("Deleting object header with hash: %v failed with error: %v", headerDAO.ID, err)
+		}
+	}
+
+	if !isValidSignature {
+		rootHashDAO := rootHashDAO{}
+		if err := s.db.One("ID", latestRootHashKey, &rootHashDAO); err != nil {
+			log.Errorf("could not retrieve root hash with key: %v due to error: %v", latestRootHashKey, err)
+		} else {
+			_ = s.db.DeleteStruct(&rootHashDAO)
 		}
 	}
 

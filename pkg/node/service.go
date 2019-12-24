@@ -16,6 +16,7 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	"github.com/SkycoinProject/dmsg/cipher"
+	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,16 +74,16 @@ func (s *Service) notifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		time.Sleep(3 * time.Second)
-		s.requestData(rootHash)
+		s.requestData(rootHash, false)
 	}()
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Service) requestData(rootHash model.RootHash) {
+func (s *Service) requestData(rootHash model.RootHash, isRetry bool) {
 	_, err := s.db.GetRootHash(rootHash.Key())
 	if err == nil {
-		fmt.Printf("received root hash with key: %v already exist", rootHash.Key())
+		fmt.Printf("received root hash with key: %v already exist \n", rootHash.Key())
 		return
 	}
 	if err != errors.ErrCannotFindRootHash {
@@ -111,8 +112,19 @@ func (s *Service) requestData(rootHash model.RootHash) {
 
 	path := s.createStoragePathForPublisher(rootHash.Publisher)
 	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, path, newObjectHeaderHashes, client)
-	s.removeUnreferencedFiles(rootHash.Key())
 
+	isValid := s.checkSignature(rootHash)
+	s.removeUnreferencedFiles(rootHash.Key(), isValid)
+
+	if !isValid && !isRetry {
+		s.requestData(rootHash, true)
+		return
+	}
+
+	if !isValid {
+		fmt.Printf("Signature is not valid. All data from feed: %s is removed...", rootHash.Publisher)
+		return
+	}
 	fmt.Println("Update of local storage finished successfully")
 }
 
@@ -199,7 +211,7 @@ func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, 
 	var missingHeaderHashes []string
 	for i, header := range headers {
 		for _, ref := range header.ExternalReferences {
-			_, err := s.db.GetObjectHeader(ref)
+			existingHeader, err := s.db.GetObjectHeader(ref)
 			if err != nil {
 				if err == errors.ErrCannotFindObjectHeader {
 					missingHeaderHashes = append(missingHeaderHashes, ref)
@@ -208,8 +220,8 @@ func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, 
 				return fmt.Errorf("fetching object header with hash: %v from db failed due to error: %v", ref, err)
 			} else {
 				// update existing object header to newest sequence
-				if err := s.db.UpdateObjectHeaderRootHashKey(ref, rootHash.Key()); err != nil {
-					return fmt.Errorf("updating object header with hash: %v failed due to error: %v", ref, err)
+				if err := s.UpdateObjectHeaderRootHashKey(ref, rootHash.Key(), existingHeader); err != nil {
+					return err
 				}
 			}
 		}
@@ -221,6 +233,24 @@ func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, 
 
 	if len(missingHeaderHashes) > 0 {
 		if err := s.retrieveHeaders(client, rootHash, missingHeaderHashes...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Update object header and all references to the newest sequence
+func (s *Service) UpdateObjectHeaderRootHashKey(hash, rootHashKey string, header model.ObjectHeader) error {
+	if err := s.db.UpdateObjectHeaderRootHashKey(hash, rootHashKey); err != nil {
+		return fmt.Errorf("updating object header with hash: %v failed due to error: %v", hash, err)
+	}
+
+	for _, ref := range header.ExternalReferences {
+		header, err := s.db.GetObjectHeader(ref)
+		if err != nil {
+			return fmt.Errorf("retrieveing object header with hash: %v failed due to error: %v", ref, err)
+		}
+		if err := s.UpdateObjectHeaderRootHashKey(ref, rootHashKey, header); err != nil {
 			return err
 		}
 	}
@@ -313,10 +343,61 @@ func createFile(path string, content []byte) {
 	}
 }
 
-func (s *Service) removeUnreferencedFiles(rootHashKey string) {
-	for _, path := range s.db.RemoveUnreferencedObjects(rootHashKey) {
+func (s *Service) removeUnreferencedFiles(rootHashKey string, isValidSignature bool) {
+	for _, path := range s.db.RemoveUnreferencedObjects(rootHashKey, isValidSignature) {
 		if err := os.RemoveAll(path); err != nil {
 			fmt.Printf("Deleting file: %v failed due to error: %v", path, err)
 		}
+	}
+}
+
+func (s *Service) checkSignature(rootHash model.RootHash) bool {
+	parcel := model.Parcel{}
+	s.recreateParcel(&parcel, rootHash.ObjectHeaderHash)
+
+	parcelBytes, err := json.Marshal(parcel)
+	if err != nil {
+		panic(err)
+	}
+
+	sig := dmsgcipher.Sig{}
+	_ = sig.UnmarshalText([]byte(rootHash.Signature))
+
+	pubKey := dmsgcipher.PubKey{}
+	_ = pubKey.UnmarshalText([]byte(rootHash.Publisher))
+
+	if err = dmsgcipher.VerifyPubKeySignedPayload(pubKey, sig, parcelBytes); err != nil {
+		fmt.Printf("parcel signature verification failed due to error: %v \n", err)
+		return false
+	}
+	return true
+}
+
+func (s *Service) recreateParcel(parcel *model.Parcel, hash string) {
+	header, err := s.db.GetObjectHeader(hash)
+	if err != nil {
+		panic(err)
+	}
+	parcel.ObjectHeaders = append(parcel.ObjectHeaders, header)
+
+	if isDirectory(header) {
+		for _, ref := range header.ExternalReferences {
+			s.recreateParcel(parcel, ref)
+		}
+
+	} else {
+		path, err := s.db.GetObjectPath(header.ObjectHash)
+		if err != nil {
+			panic(err)
+		}
+		bytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+
+		parcel.Objects = append(parcel.Objects, model.Object{
+			Length: uint64(len(bytes)),
+			Data:   bytes,
+		})
 	}
 }
