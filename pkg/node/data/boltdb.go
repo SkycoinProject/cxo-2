@@ -48,7 +48,7 @@ func initBuckets() error {
 		return fmt.Errorf("could not create object header bucket: %v", err)
 	}
 
-	err = DB.Init(&objectInfo{})
+	err = DB.Init(&objectDAO{})
 	if err != nil {
 		return fmt.Errorf("could not create object bucket: %v", err)
 	}

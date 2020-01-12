@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/SkycoinPro/cxo-2-node/pkg/errors"
@@ -110,17 +108,8 @@ func (s *Service) requestData(rootHash model.RootHash, isRetry bool) {
 		return
 	}
 
-	newObjectHeaderHashes, err := s.db.FindNewObjectHeaderHashes(rootHash.Key(), rootHash.Timestamp)
-	if err != nil {
-		fmt.Printf("fetching new headers failed due to error: %v", err)
-		return
-	}
-
-	path := s.createStoragePathForPublisher(rootHash.Publisher)
-	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, path, newObjectHeaderHashes, client)
-
 	parcel, isValid := s.checkSignature(rootHash)
-	s.removeUnreferencedFiles(rootHash.Key(), isValid)
+	s.db.RemoveUnreferencedObjects(rootHash.Key(), isValid)
 
 	if !isValid && !isRetry {
 		s.requestData(rootHash, true)
@@ -131,9 +120,8 @@ func (s *Service) requestData(rootHash model.RootHash, isRetry bool) {
 		fmt.Printf("Signature is not valid. All data from feed: %s is removed...", rootHash.Publisher)
 		return
 	}
-	fmt.Println("Update of local storage finished successfully")
-
 	s.notifyRegisteredApps(rootHash, parcel)
+	fmt.Println("Retrieving new data finished successfully")
 }
 
 func (s *Service) notifyRegisteredApps(rootHash model.RootHash, parcel model.Parcel) {
@@ -158,81 +146,6 @@ func (s *Service) notifyRegisteredApps(rootHash model.RootHash, parcel model.Par
 		}
 		fmt.Printf("App with address: %v notified succesfully.", address)
 	}
-}
-
-func (s *Service) createStoragePathForPublisher(publisher string) string {
-	publisherStoragePath := filepath.Join(s.config.StoragePath, publisher)
-	if _, err := os.Stat(publisherStoragePath); os.IsNotExist(err) {
-		if errDir := os.Mkdir(publisherStoragePath, os.ModePerm); errDir != nil {
-			fmt.Printf("unable to prepare storage directory: %v due to err: %v", publisherStoragePath, err)
-			panic(err)
-		}
-	}
-
-	return publisherStoragePath
-}
-
-func (s *Service) storeHeaderOnPath(headerHash, path string, newHeaders map[string]struct{}, client *http.Client) {
-	header, err := s.db.GetObjectHeader(headerHash)
-	name := name(header)
-	if err != nil {
-		fmt.Printf("Unable to store header %s due to error %v", headerHash, err)
-		return
-	}
-	if isDirectory(header) {
-		if _, contains := newHeaders[headerHash]; !contains {
-			return
-		}
-
-		path = filepath.Join(path, name)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			_ = os.Mkdir(path, os.ModePerm)
-		}
-		err = s.db.SaveObjectInfo(headerHash, path)
-		if err != nil {
-			fmt.Printf("saving object in db with hash: %v failed with error: %v", headerHash, err)
-		}
-
-		for _, ref := range header.ExternalReferences {
-			s.storeHeaderOnPath(ref, path, newHeaders, client)
-		}
-
-		return
-	}
-
-	if _, contains := newHeaders[headerHash]; !contains {
-		return
-	}
-
-	filePath := filepath.Join(path, name)
-	object, err := s.fetchObject(client, header.ObjectHash)
-	if err != nil {
-		fmt.Printf("error writing file to local storage - can't fetch content for file %s", name)
-	} else {
-		err = s.db.SaveObjectInfo(header.ObjectHash, filePath)
-		if err != nil {
-			fmt.Printf("saving object in db with hash: %v failed with error: %v", header.ObjectHash, err)
-		}
-		createFile(filePath, object.Data)
-	}
-}
-
-func name(oh model.ObjectHeader) string {
-	for _, meta := range oh.Meta {
-		if meta.Key == "name" {
-			return meta.Value
-		}
-	}
-	return ""
-}
-
-func isDirectory(oh model.ObjectHeader) bool {
-	for _, meta := range oh.Meta {
-		if meta.Key == "type" && meta.Value == "directory" {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, headerHashes ...string) error {
@@ -261,6 +174,13 @@ func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, 
 		if err := s.db.SaveObjectHeader(headerHashes[i], rootHash, header); err != nil {
 			return fmt.Errorf("saving object header with hash: %v failed due to error: %v", headerHashes[i], err)
 		}
+
+		if len(header.ObjectHash) > 0 {
+			// fetch and save missing object
+			if err := s.fetchAndSaveObject(header.ObjectHash, headerHashes[i], client); err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(missingHeaderHashes) > 0 {
@@ -268,6 +188,19 @@ func (s *Service) retrieveHeaders(client *http.Client, rootHash model.RootHash, 
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *Service) fetchAndSaveObject(hash, objectHeaderHash string, client *http.Client) error {
+	object, err := s.fetchObject(client, hash)
+	if err != nil {
+		return fmt.Errorf("fetch object with hash: %v failed due to error: %v", hash, err)
+	}
+
+	if err := s.db.SaveObject(hash, objectHeaderHash, object); err != nil {
+		return fmt.Errorf("saving object with hash: %v failed due to error: %v", hash, err)
+	}
+
 	return nil
 }
 
@@ -357,32 +290,6 @@ func (s *Service) fetchObject(client *http.Client, objectHash string) (model.Obj
 	return object, nil
 }
 
-func createFile(path string, content []byte) {
-	f, err := os.Create(path)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	if _, err := f.Write(content); err != nil {
-		panic(err)
-	}
-	if err = f.Sync(); err != nil {
-		panic(err)
-	}
-}
-
-func (s *Service) removeUnreferencedFiles(rootHashKey string, isValidSignature bool) {
-	for _, path := range s.db.RemoveUnreferencedObjects(rootHashKey, isValidSignature) {
-		if err := os.RemoveAll(path); err != nil {
-			fmt.Printf("Deleting file: %v failed due to error: %v", path, err)
-		}
-	}
-}
-
 func (s *Service) checkSignature(rootHash model.RootHash) (model.Parcel, bool) {
 	parcel := model.Parcel{}
 	s.recreateParcel(&parcel, rootHash.ObjectHeaderHash)
@@ -412,24 +319,17 @@ func (s *Service) recreateParcel(parcel *model.Parcel, hash string) {
 	}
 	parcel.ObjectHeaders = append(parcel.ObjectHeaders, header)
 
-	if isDirectory(header) {
+	if len(header.ObjectHash) == 0 {
 		for _, ref := range header.ExternalReferences {
 			s.recreateParcel(parcel, ref)
 		}
 
 	} else {
-		path, err := s.db.GetObjectPath(header.ObjectHash)
-		if err != nil {
-			panic(err)
-		}
-		bytes, err := ioutil.ReadFile(path)
+		object, err := s.db.GetObject(header.ObjectHash)
 		if err != nil {
 			panic(err)
 		}
 
-		parcel.Objects = append(parcel.Objects, model.Object{
-			Length: uint64(len(bytes)),
-			Data:   bytes,
-		})
+		parcel.Objects = append(parcel.Objects, object)
 	}
 }
