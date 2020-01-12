@@ -59,3 +59,13 @@ type PublishDataRequest struct {
 type GetObjectHeadersResponse struct {
 	ObjectHeaders []ObjectHeader `json:"objectHeaders"`
 }
+
+type RegisterAppRequest struct {
+	Address string
+	Name    string
+}
+
+type NotifyAppRequest struct {
+	RootHash RootHash
+	Parcel   Parcel
+}

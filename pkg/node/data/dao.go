@@ -22,3 +22,9 @@ type objectInfo struct {
 	ID   string
 	Path string `storm:"index"`
 }
+
+type app struct {
+	Pk      int `storm:"id,increment"`
+	Address string
+	Name    string
+}

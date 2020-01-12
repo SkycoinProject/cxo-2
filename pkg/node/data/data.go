@@ -22,6 +22,8 @@ type Data interface {
 	GetObjectPath(hash string) (string, error)
 	FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error)
 	RemoveUnreferencedObjects(rootHashKey string, isValidSignature bool) []string
+	RegisterApp(address, name string) error
+	GetAllRegisteredApps() ([]string, error)
 }
 
 type store struct {
@@ -211,4 +213,37 @@ func isDirectory(oh model.ObjectHeader) bool {
 		}
 	}
 	return false
+}
+
+func (s store) RegisterApp(address, name string) error {
+	var existingApp app
+	if err := s.db.One("Address", address, &existingApp); err != nil {
+		if err != storm.ErrNotFound {
+			log.Errorf("fetching app with address: %v failed due to error: %v", address, err)
+			return err
+		}
+	} else {
+		log.Infof("app with address: %v already registered...", address)
+		return nil
+	}
+	return s.db.Save(&app{
+		Address: address,
+		Name:    name,
+	})
+}
+
+func (s store) GetAllRegisteredApps() ([]string, error) {
+	var apps []app
+	var addresses []string
+	var err error
+	if err = s.db.All(&apps); err != nil {
+		log.Error("could not retrieve registered apps due to error: ", err)
+		return addresses, err
+	}
+
+	for _, app := range apps {
+		addresses = append(addresses, app.Address)
+	}
+
+	return addresses, nil
 }

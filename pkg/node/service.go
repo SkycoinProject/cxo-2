@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -38,6 +39,11 @@ var notifyRoute = "/notify"
 
 // Run - start's node service
 func (s *Service) Run() {
+	webServer := InitServerAndController(s.db)
+	go func() {
+		webServer.Run()
+	}()
+
 	httpS := dmsghttp.Server{
 		PubKey:    s.config.PubKey,
 		SecKey:    s.config.SecKey,
@@ -113,7 +119,7 @@ func (s *Service) requestData(rootHash model.RootHash, isRetry bool) {
 	path := s.createStoragePathForPublisher(rootHash.Publisher)
 	s.storeHeaderOnPath(rootHash.ObjectHeaderHash, path, newObjectHeaderHashes, client)
 
-	isValid := s.checkSignature(rootHash)
+	parcel, isValid := s.checkSignature(rootHash)
 	s.removeUnreferencedFiles(rootHash.Key(), isValid)
 
 	if !isValid && !isRetry {
@@ -126,6 +132,32 @@ func (s *Service) requestData(rootHash model.RootHash, isRetry bool) {
 		return
 	}
 	fmt.Println("Update of local storage finished successfully")
+
+	s.notifyRegisteredApps(rootHash, parcel)
+}
+
+func (s *Service) notifyRegisteredApps(rootHash model.RootHash, parcel model.Parcel) {
+	addresses, err := s.db.GetAllRegisteredApps()
+	if err != nil {
+		fmt.Println("Error while fetching registered apps: ", err)
+		return
+	}
+	notifyRequest := model.NotifyAppRequest{
+		RootHash: rootHash,
+		Parcel:   parcel,
+	}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(notifyRequest)
+
+	client := http.DefaultClient
+	for _, address := range addresses {
+		_, err := client.Post(fmt.Sprint("http://", address), "application/json", b)
+		if err != nil {
+			fmt.Printf("Notify app with address: %v failed due to error %v: ", address, err)
+			continue
+		}
+		fmt.Printf("App with address: %v notified succesfully.", address)
+	}
 }
 
 func (s *Service) createStoragePathForPublisher(publisher string) string {
@@ -351,7 +383,7 @@ func (s *Service) removeUnreferencedFiles(rootHashKey string, isValidSignature b
 	}
 }
 
-func (s *Service) checkSignature(rootHash model.RootHash) bool {
+func (s *Service) checkSignature(rootHash model.RootHash) (model.Parcel, bool) {
 	parcel := model.Parcel{}
 	s.recreateParcel(&parcel, rootHash.ObjectHeaderHash)
 
@@ -368,9 +400,9 @@ func (s *Service) checkSignature(rootHash model.RootHash) bool {
 
 	if err = dmsgcipher.VerifyPubKeySignedPayload(pubKey, sig, parcelBytes); err != nil {
 		fmt.Printf("parcel signature verification failed due to error: %v \n", err)
-		return false
+		return parcel, false
 	}
-	return true
+	return parcel, true
 }
 
 func (s *Service) recreateParcel(parcel *model.Parcel, hash string) {
