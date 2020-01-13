@@ -22,6 +22,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sirupsen/logrus v1.4.3-0.20191014202344-fb62dbe2f2a2
+	github.com/skycoin/skycoin v0.26.0
 	github.com/spf13/cobra v0.0.6-0.20191014031137-8a4b46fadf75
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.1-0.20190904163530-85f2b59c4459 // indirect
