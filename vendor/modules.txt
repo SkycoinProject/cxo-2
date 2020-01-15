@@ -61,6 +61,7 @@ github.com/pmezard/go-difflib/difflib
 # github.com/sirupsen/logrus v1.4.3-0.20191014202344-fb62dbe2f2a2
 github.com/sirupsen/logrus
 # github.com/skycoin/skycoin v0.26.0
+github.com/skycoin/skycoin/src/cipher
 github.com/skycoin/skycoin/src/cipher/base58
 github.com/skycoin/skycoin/src/cipher/ripemd160
 github.com/skycoin/skycoin/src/cipher/secp256k1-go

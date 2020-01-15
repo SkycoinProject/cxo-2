@@ -19,7 +19,7 @@ const (
 	host               = "127.0.0.1"
 	port               = 8080
 	notifyRoute        = "/notify"
-	cxoNodeRegisterUrl = "http://127.0.0.1:6420/api/v1/registerApp"
+	cxoNodeRegisterUrl = "http://127.0.0.1:6421/api/v1/registerApp"
 )
 
 var storagePath string
@@ -50,7 +50,7 @@ func registerAppOnCxoNode() {
 		fmt.Printf("App registration on cxo node failed with status: %v. Make sure cxo node is running properly.", resp.StatusCode)
 		os.Exit(1)
 	}
-	fmt.Println("App registered on cxo node successfully.")
+	fmt.Println("App registered on cxo node successfully...")
 }
 
 func initStoragePath() string {
@@ -60,6 +60,7 @@ func initStoragePath() string {
 	}
 
 	path := filepath.Join(homeDir, "cxo-file-transfer")
+	//TODO check if dir exist but we don't have rights
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		errDir := os.MkdirAll(path, 0755)
 		if errDir != nil {
@@ -96,8 +97,9 @@ func processData() {
 
 func createStoragePathForPublisher(publisher string) string {
 	publisherStoragePath := filepath.Join(storagePath, publisher)
+	//TODO check if dir exist but we don't have rights
 	if _, err := os.Stat(publisherStoragePath); os.IsNotExist(err) {
-		if errDir := os.Mkdir(publisherStoragePath, os.ModePerm); errDir != nil {
+		if errDir := os.Mkdir(publisherStoragePath, 0755); errDir != nil {
 			processError(fmt.Errorf("unable to prepare storage directory: %v due to err: %v", publisherStoragePath, err))
 		}
 	}
