@@ -64,8 +64,8 @@ func runCommands(conf config) {
 
 				command.Actions[1] = newPath
 			}
-			fmt.Println("running commands: cxo-node-cli ", command.Actions)
-			cmd := exec.Command("cxo-node-cli", command.Actions...)
+			fmt.Println("running commands: cxo-file-sharing-cli ", command.Actions)
+			cmd := exec.Command("cxo-file-sharing-cli", command.Actions...)
 			// var outb, errb bytes.Buffer
 			// cmd.Stdout = &outb
 			// cmd.Stderr = &errb
