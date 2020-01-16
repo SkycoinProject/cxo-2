@@ -18,20 +18,20 @@ import (
 )
 
 func main() {
-	fileTransferCli := &cobra.Command{
-		Short: fmt.Sprintf("The cxo-file-transfer command line interface"),
-		Use:   fmt.Sprintf("file-transfer-cli"),
+	cli := &cobra.Command{
+		Short: fmt.Sprintf("The cxo-file-sharing command line interface"),
+		Use:   fmt.Sprintf("cxo-file-sharing-cli"),
 	}
 
 	commands := []*cobra.Command{
 		publishDataCmd(),
 	}
 
-	fileTransferCli.Version = "0.1.1"
-	fileTransferCli.AddCommand(commands...)
+	cli.Version = "0.1.1"
+	cli.AddCommand(commands...)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
-	if err := fileTransferCli.Execute(); err != nil {
+	if err := cli.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

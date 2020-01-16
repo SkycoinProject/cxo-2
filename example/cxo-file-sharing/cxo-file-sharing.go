@@ -59,7 +59,7 @@ func initStoragePath() string {
 		processError(fmt.Errorf("unable to find working directory due to error: %v", err))
 	}
 
-	path := filepath.Join(homeDir, "cxo-file-transfer")
+	path := filepath.Join(homeDir, "cxo-file-sharing")
 	//TODO check if dir exist but we don't have rights
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		errDir := os.MkdirAll(path, 0755)
