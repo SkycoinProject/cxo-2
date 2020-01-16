@@ -1,2 +1,2 @@
 trackerUrl: "dmsg://02af1ed222c20e866e9cc3fb6291a45d656036cba168597a6a1f9c1cb5afa17f60:8084"
-#discoveryUrl: "http://localhost:9090"
+discoveryUrl: "http://dmsg.discovery.skywire.cc"

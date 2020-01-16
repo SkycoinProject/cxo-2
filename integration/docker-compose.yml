@@ -21,7 +21,6 @@ services:
     container_name: "node-1"
     # depends_on:
     #   - "tracker"
-    #restart: always
     volumes:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
@@ -31,7 +30,7 @@ services:
       - ./files/node-1:/root/.cxo-node/files
       - ./content/node1-content1.txt:/content/node1-content1.txt
       - ./runners/node1.json:/runner-config.json
-    command: /bin/sh -c 'cxo-node & test-runner' # && cxo-node
+    command: /bin/sh -c 'cxo-node & test-runner'
 
   node-2:
     build: .
