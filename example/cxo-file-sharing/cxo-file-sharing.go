@@ -17,7 +17,7 @@ import (
 
 const (
 	host               = "127.0.0.1"
-	port               = 8080
+	port               = 6430
 	notifyRoute        = "/notify"
 	cxoNodeRegisterUrl = "http://127.0.0.1:6421/api/v1/registerApp"
 )

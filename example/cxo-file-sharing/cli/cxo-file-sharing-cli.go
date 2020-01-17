@@ -91,13 +91,15 @@ func publishDataCmd() *cobra.Command {
 			}
 
 			cmd := exec.Command("cxo-node-cli", "publish", tempFilePath)
-			var cxoNodeOut bytes.Buffer
+			var cxoNodeOut, cxoNodeErrOut bytes.Buffer
 			cmd.Stdout = &cxoNodeOut
+			cmd.Stderr = &cxoNodeErrOut
 			if err := cmd.Run(); err != nil {
 				fmt.Println("cxo node publish failed due to error", err)
 				return err
 			}
 
+			fmt.Println(cxoNodeErrOut.String())
 			fmt.Println(cxoNodeOut.String())
 			return nil
 		},
