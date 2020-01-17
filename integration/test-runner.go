@@ -66,9 +66,15 @@ func runCommands(conf config) {
 			}
 			fmt.Println("running commands: cxo-node-cli ", command.Actions)
 			cmd := exec.Command("cxo-node-cli", command.Actions...)
+			// var outb, errb bytes.Buffer
+			// cmd.Stdout = &outb
+			// cmd.Stderr = &errb
 			if err := cmd.Run(); err != nil {
+				// fmt.Println("runner out:", outb.String())
+				// fmt.Println("runner err:", errb.String())
 				log.Fatal(err)
 			}
+			// fmt.Println("runner out:", outb.String())
 		}
 
 		fmt.Printf("sleeping for %v seconds\n", command.SleepInSeconds)
