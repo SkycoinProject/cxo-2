@@ -64,15 +64,24 @@ func runCommands(conf config) {
 
 				command.Actions[1] = newPath
 			}
-			fmt.Println("running commands: cxo-file-sharing-cli ", command.Actions)
-			cmd := exec.Command("cxo-file-sharing-cli", command.Actions...)
-			// var outb, errb bytes.Buffer
-			// cmd.Stdout = &outb
-			// cmd.Stderr = &errb
-			if err := cmd.Run(); err != nil {
-				// fmt.Println("runner out:", outb.String())
-				// fmt.Println("runner err:", errb.String())
-				log.Fatal(err)
+
+			if command.Actions[0] == "subscribe" {
+				fmt.Println("running commands: cxo-node ", command.Actions)
+				cmd := exec.Command("cxo-node", command.Actions...)
+				if err := cmd.Run(); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				fmt.Println("running commands: cxo-file-sharing-cli ", command.Actions)
+				cmd := exec.Command("cxo-file-sharing-cli", command.Actions...)
+				// var outb, errb bytes.Buffer
+				// cmd.Stdout = &outb
+				// cmd.Stderr = &errb
+				if err := cmd.Run(); err != nil {
+					// fmt.Println("runner out:", outb.String())
+					// fmt.Println("runner err:", errb.String())
+					log.Fatal(err)
+				}
 			}
 			// fmt.Println("runner out:", outb.String())
 		}

@@ -18,6 +18,9 @@ services:
 
   node-1:
     build: .
+    ports:
+      - "6421:6421"
+    network_mode: host # way to see local discovery
     container_name: "node-1"
     # depends_on:
     #   - "tracker"
@@ -25,12 +28,14 @@ services:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
+      - ./executables/cxo-file-sharing:/usr/local/bin/cxo-file-sharing
+      - ./executables/cxo-file-sharing-cli:/usr/local/bin/cxo-file-sharing-cli
       - ./config/.cxo-node:/root/.cxo-node
       - ./keypairs/node-1.txt:/root/.cxo-node/keys.txt
-      - ./files/node-1:/root/.cxo-node/files
+      - ./files/node-1:/root/cxo-file-sharing
       - ./content/node1-content1.txt:/content/node1-content1.txt
       - ./runners/node1.json:/runner-config.json
-    command: /bin/sh -c 'cxo-node & test-runner'
+    command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
 
   node-2:
     build: .
@@ -41,13 +46,15 @@ services:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
+      - ./executables/cxo-file-sharing:/usr/local/bin/cxo-file-sharing
+      - ./executables/cxo-file-sharing-cli:/usr/local/bin/cxo-file-sharing-cli
       - ./config/.cxo-node:/root/.cxo-node
       - ./keypairs/node-2.txt:/root/.cxo-node/keys.txt
-      - ./files/node-2:/root/.cxo-node/files
+      - ./files/node-2:/root/cxo-file-sharing
       - ./content/node2-content1.txt:/content/node2-content1.txt
       - ./content/node2-content1-version2.txt:/content/node2-content1-version2.txt
       - ./runners/node2.json:/runner-config.json
-    command: /bin/sh -c 'cxo-node & test-runner'
+      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
     
   node-3:
     build: .
@@ -58,14 +65,16 @@ services:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
+      - ./executables/cxo-file-sharing:/usr/local/bin/cxo-file-sharing
+      - ./executables/cxo-file-sharing-cli:/usr/local/bin/cxo-file-sharing-cli
       - ./config/.cxo-node:/root/.cxo-node
       - ./keypairs/node-3.txt:/root/.cxo-node/keys.txt
-      - ./files/node-2:/root/.cxo-node/files
+      - ./files/node-2:/root/cxo-file-sharing
       - ./content/node3-content1.txt:/content/node3-content1.txt
       - ./content/node3-content2:/content/node3-content2
       - ./content/node3-content2-version2:/content/node3-content2-version2
       - ./runners/node3.json:/runner-config.json
-    command: /bin/sh -c 'cxo-node & test-runner'
+      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
 
   node-4:
     build: .
@@ -76,11 +85,13 @@ services:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
+      - ./executables/cxo-file-sharing:/usr/local/bin/cxo-file-sharing
+      - ./executables/cxo-file-sharing-cli:/usr/local/bin/cxo-file-sharing-cli
       - ./config/.cxo-node:/root/.cxo-node
       - ./keypairs/node-4.txt:/root/.cxo-node/keys.txt
-      - ./files/node-4:/root/.cxo-node/files
+      - ./files/node-4:/root/cxo-file-sharing
       - ./runners/node4.json:/runner-config.json
-    command: /bin/sh -c 'cxo-node & test-runner'
+      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
 
   node-5:
     build: .
@@ -91,9 +102,11 @@ services:
       - ./executables/node:/usr/local/bin/cxo-node
       - ./executables/node-cli:/usr/local/bin/cxo-node-cli
       - ./executables/test-runner:/usr/local/bin/test-runner
+      - ./executables/cxo-file-sharing:/usr/local/bin/cxo-file-sharing
+      - ./executables/cxo-file-sharing-cli:/usr/local/bin/cxo-file-sharing-cli
       - ./config/.cxo-node:/root/.cxo-node
       - ./keypairs/node-5.txt:/root/.cxo-node/keys.txt
-      - ./files/node-5:/root/.cxo-node/files
+      - ./files/node-5:/root/cxo-file-sharing
       - ./content/empty:/content/empty
       - ./runners/node5.json:/runner-config.json
-    command: /bin/sh -c 'cxo-node & test-runner'
+      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
