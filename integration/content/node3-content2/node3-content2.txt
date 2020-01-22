@@ -1,1 +1,1 @@
-node3-content2-version1
+node3-content2-version1-onlyfile

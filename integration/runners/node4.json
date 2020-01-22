@@ -1,6 +1,9 @@
 {
     "commands": [
         {
+            "sleepInSeconds": 50
+        },
+        {
             "actions": [
                 "subscribe", 
                 "02fa97d21445e74c2dd203fbec3f83fedfd0c35c5fc5aa9e8a8e3b6056f6493d84"],
@@ -11,7 +14,7 @@
                 "subscribe",
                 "0369b16e07607afa9861ab422e656e14d0dd7c972f8fbcf8055883ca8d866f1306"
             ],
-            "sleepInSeconds": 25
+            "sleepInSeconds": 325
         }
     ]
 }

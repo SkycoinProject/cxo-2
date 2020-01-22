@@ -4,14 +4,14 @@
             "actions": [
                 "subscribe", 
                 "02766392a3cbd3d4ce410fa6c26e0bf131770d587d134d96de2a4e5c20a84600f9"],
-            "sleepInSeconds": 5
+            "sleepInSeconds": 15
         },
         {
             "actions": [
                 "publish",
                 "/content/empty"
             ],
-            "sleepInSeconds": 1125
+            "sleepInSeconds": 325
         }
     ]
 }

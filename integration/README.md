@@ -7,7 +7,7 @@ Nodes will take following actions:
 * Node 1 will subscribe to Node 2 and 4 and will publish one file
 * Node 2 will subscribe to Node 3 and will push directory twice - first one file and add * second file on update. It will subscribe later so that Node 3 has time to do 1 publish before Node 2 subscribes
 * Node 3 will subscibe to no other nodes and will publish first file and then directory on two other times (creating one file in first directory push and replacing it in the second push with two new files)
-* Node 4 will subscribe to Node 2 and Node 3 and will not push at all
+* Node 4 will first wait a bit and then subscribe to Node 2 and Node 3 and will not push at all
 * Node 5 will subscribe to Node 1 and will push once empty directory
 
 At the end this should leave us with the following received content:

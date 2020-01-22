@@ -19,7 +19,7 @@
                 "publish",
                 "/content/node2-content1-version2.txt"
             ],
-            "sleepInSeconds": 1125
+            "sleepInSeconds": 325
         }
     ]
 }
