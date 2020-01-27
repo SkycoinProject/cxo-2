@@ -32,12 +32,21 @@ const (
 )
 
 // LoadConfig - load node's configuration
-func LoadConfig() Config {
-	homeDir, err := homedir.Dir()
-	if err != nil {
-		processError("unable to find home directory", err)
+func LoadConfig(local *bool) Config {
+	var appRootFolderPath = ""
+	if *local == true {
+		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			processError("unable to read environment variable for folder from which node is running", err)
+		}
+		appRootFolderPath = filepath.Join(dir, appRootFolderName)
+	} else {
+		homeDir, err := homedir.Dir()
+		if err != nil {
+			processError("unable to find home directory", err)
+		}
+		appRootFolderPath = filepath.Join(homeDir, appRootFolderName)
 	}
-	appRootFolderPath := filepath.Join(homeDir, appRootFolderName)
 
 	keysFilePath := filepath.Join(appRootFolderPath, keysFileName)
 	sPK, sSK := util.PrepareKeyPair(keysFilePath)
