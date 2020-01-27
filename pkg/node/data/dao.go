@@ -18,7 +18,19 @@ type objectHeaderDAO struct {
 	ObjectHeader model.ObjectHeader
 }
 
+type objectDAO struct {
+	ID               string
+	ObjectHeaderHash string `storm:"index"`
+	Object           model.Object
+}
+
 type objectInfo struct {
 	ID   string
 	Path string `storm:"index"`
+}
+
+type app struct {
+	Pk      int `storm:"id,increment"`
+	Address string
+	Name    string
 }

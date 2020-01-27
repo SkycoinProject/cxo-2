@@ -20,12 +20,10 @@ type Config struct {
 	SecKey         cipher.SecKey
 	Port           uint16
 	Discovery      disc.APIClient
-	StoragePath    string
 }
 
 const (
 	appRootFolderName   = ".cxo-node"
-	storageFolderName   = "files"
 	keysFileName        = "keys.txt"
 	configFileName      = "cxo-node-config.yml"
 	defaultDiscoveryURL = "http://dmsg.discovery.skywire.skycoin.com"
@@ -40,8 +38,6 @@ func LoadConfig() Config {
 		processError("unable to find home directory", err)
 	}
 	appRootFolderPath := filepath.Join(homeDir, appRootFolderName)
-
-	storagePath := initStoragePath(appRootFolderPath)
 
 	keysFilePath := filepath.Join(appRootFolderPath, keysFileName)
 	sPK, sSK := util.PrepareKeyPair(keysFilePath)
@@ -61,19 +57,7 @@ func LoadConfig() Config {
 		SecKey:         sSK,
 		Port:           serverPort,
 		Discovery:      disc.NewHTTP(confFile.DiscoveryURL),
-		StoragePath:    storagePath,
 	}
-}
-
-func initStoragePath(appPath string) string {
-	storagePath := filepath.Join(appPath, storageFolderName)
-	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
-		errDir := os.MkdirAll(storagePath, 0755)
-		if errDir != nil {
-			processError("unable to prepare storage directory", err)
-		}
-	}
-	return storagePath
 }
 
 func readConfigFile(path string, conf *configFile) {

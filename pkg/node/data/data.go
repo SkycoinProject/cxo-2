@@ -15,13 +15,15 @@ import (
 type Data interface {
 	SaveRootHash(rootHash model.RootHash) error
 	SaveObjectHeader(hash string, rootHash model.RootHash, objectHeader model.ObjectHeader) error
-	SaveObjectInfo(hash, path string) error
+	SaveObject(hash, objectHeaderHash string, object model.Object) error
 	UpdateObjectHeaderRootHashKey(hash string, rootHashKey string) error
 	GetRootHash(hash string) (model.RootHash, error)
 	GetObjectHeader(hash string) (model.ObjectHeader, error)
-	GetObjectPath(hash string) (string, error)
+	GetObject(hash string) (model.Object, error)
 	FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error)
-	RemoveUnreferencedObjects(rootHashKey string, isValidSignature bool) []string
+	RemoveUnreferencedObjects(rootHashKey string, isValidSignature bool)
+	RegisterApp(address, name string) error
+	GetAllRegisteredApps() ([]string, error)
 }
 
 type store struct {
@@ -50,26 +52,11 @@ func (s store) SaveObjectHeader(hash string, rootHash model.RootHash, objectHead
 	})
 }
 
-func (s store) SaveObjectInfo(hash, path string) error {
-	var info objectInfo
-	if err := s.db.One("Path", path, &info); err != nil {
-		if err != storm.ErrNotFound {
-			log.Errorf("could not find previous object info with path: %v due to error: %v", path, err)
-			return err
-		}
-	}
-
-	if info.ID != "" {
-		// delete previous record for same path in order not to delete path on clean up later on
-		if err := s.db.DeleteStruct(&info); err != nil {
-			log.Errorf("could not delete previous object info with path: %v due to error: %v", path, err)
-			return err
-		}
-	}
-
-	return s.db.Save(&objectInfo{
-		ID:   hash,
-		Path: path,
+func (s store) SaveObject(hash, objectHeaderHash string, object model.Object) error {
+	return s.db.Save(&objectDAO{
+		ID:               hash,
+		ObjectHeaderHash: objectHeaderHash,
+		Object:           object,
 	})
 }
 
@@ -107,19 +94,19 @@ func (s store) GetObjectHeader(hash string) (model.ObjectHeader, error) {
 	return objectHeaderDAO.ObjectHeader, err
 }
 
-func (s store) GetObjectPath(hash string) (string, error) {
-	objectInfo := objectInfo{}
+func (s store) GetObject(hash string) (model.Object, error) {
+	objectDAO := objectDAO{}
 	var err error
-	if dbError := s.db.One("ID", hash, &objectInfo); dbError != nil {
+	if dbError := s.db.One("ID", hash, &objectDAO); dbError != nil {
 		if dbError == storm.ErrNotFound {
-			err = errors.ErrCannotFindObjectPath
+			err = errors.ErrCannotFindObject
 		} else {
-			log.Errorf("could not retrieve object path with hash: %v due to error: %v", hash, err)
+			log.Errorf("could not retrieve object with hash: %v due to error: %v", hash, err)
 			err = dbError
 		}
 	}
 
-	return objectInfo.Path, err
+	return objectDAO.Object, err
 }
 
 func (s store) FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time) (map[string]struct{}, error) {
@@ -141,7 +128,7 @@ func (s store) FindNewObjectHeaderHashes(rootHashKey string, timestamp time.Time
 }
 
 // Remove headers and object infos and return slice of paths for dirs and files that should be removed
-func (s store) RemoveUnreferencedObjects(latestRootHashKey string, isValidSignature bool) []string {
+func (s store) RemoveUnreferencedObjects(latestRootHashKey string, isValidSignature bool) {
 	var objectHeaderDAOs []objectHeaderDAO
 	pubKey := strings.Split(latestRootHashKey, "_")[0]
 
@@ -149,7 +136,7 @@ func (s store) RemoveUnreferencedObjects(latestRootHashKey string, isValidSignat
 	if err := s.db.Prefix("RootHashKey", pubKey, &objectHeaderDAOs); err != nil {
 		if err != storm.ErrNotFound {
 			log.Errorf("could not retrieve unreferenced object headers due to error: %v", err)
-			return []string{}
+			return
 		}
 	}
 
@@ -166,26 +153,19 @@ func (s store) RemoveUnreferencedObjects(latestRootHashKey string, isValidSignat
 		unreferencedObjectHeaderDAOs = objectHeaderDAOs
 	}
 
-	var paths []string
 	for _, headerDAO := range unreferencedObjectHeaderDAOs {
-		var objectInfoID string
-		if isDirectory(headerDAO.ObjectHeader) {
-			objectInfoID = headerDAO.ID
-		} else {
-			objectInfoID = headerDAO.ObjectHeader.ObjectHash
-		}
-
-		var objectInfo objectInfo
-		if err := s.db.One("ID", objectInfoID, &objectInfo); err != nil {
-			if err != storm.ErrNotFound {
-				log.Errorf("Fetching object info with hash: %v failed with error: %v", headerDAO.ID, err)
+		objectHeader := headerDAO.ObjectHeader
+		if len(objectHeader.ObjectHash) > 0 {
+			var objectDAO objectDAO
+			if err := s.db.One("ID", objectHeader.ObjectHash, &objectDAO); err != nil {
+				if err != storm.ErrNotFound {
+					log.Errorf("Fetching object with hash: %v failed with error: %v", objectHeader.ObjectHash, err)
+				}
+			} else {
+				if err := s.db.DeleteStruct(&objectDAO); err != nil {
+					log.Errorf("Deleting object with hash: %v failed with error: %v", objectDAO.ID, err)
+				}
 			}
-		} else {
-			paths = append(paths, objectInfo.Path)
-			if err := s.db.DeleteStruct(&objectInfo); err != nil {
-				log.Errorf("Deleting object info with hash: %v failed with error: %v", objectInfo.ID, err)
-			}
-
 		}
 		if err := s.db.DeleteStruct(&headerDAO); err != nil {
 			log.Errorf("Deleting object header with hash: %v failed with error: %v", headerDAO.ID, err)
@@ -200,15 +180,37 @@ func (s store) RemoveUnreferencedObjects(latestRootHashKey string, isValidSignat
 			_ = s.db.DeleteStruct(&rootHashDAO)
 		}
 	}
-
-	return paths
 }
 
-func isDirectory(oh model.ObjectHeader) bool {
-	for _, meta := range oh.Meta {
-		if meta.Key == "type" && meta.Value == "directory" {
-			return true
+func (s store) RegisterApp(address, name string) error {
+	var existingApp app
+	if err := s.db.One("Address", address, &existingApp); err != nil {
+		if err != storm.ErrNotFound {
+			log.Errorf("fetching app with address: %v failed due to error: %v", address, err)
+			return err
 		}
+	} else {
+		log.Infof("app with address: %v already registered...", address)
+		return nil
 	}
-	return false
+	return s.db.Save(&app{
+		Address: address,
+		Name:    name,
+	})
+}
+
+func (s store) GetAllRegisteredApps() ([]string, error) {
+	var apps []app
+	var addresses []string
+	var err error
+	if err = s.db.All(&apps); err != nil {
+		log.Error("could not retrieve registered apps due to error: ", err)
+		return addresses, err
+	}
+
+	for _, app := range apps {
+		addresses = append(addresses, app.Address)
+	}
+
+	return addresses, nil
 }
