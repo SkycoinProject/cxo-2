@@ -4,8 +4,8 @@ go 1.13
 
 require (
 	github.com/DataDog/zstd v1.4.4 // indirect
-	github.com/SkycoinProject/dmsg v0.0.0-20191031093634-3e3d5a1b2053
-	github.com/SkycoinProject/dmsg-http v0.0.0-20191106143634-c30f8ddd6736
+	github.com/SkycoinProject/dmsg v0.0.0-20200128130016-bdcb95cea9ac
+	github.com/SkycoinProject/dmsg-http v0.0.0-20200128121303-82ce867f9aeb
 	github.com/SkycoinProject/skycoin v0.26.0
 	github.com/asdine/storm/v3 v3.0.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -15,11 +15,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sirupsen/logrus v1.4.3-0.20191014202344-fb62dbe2f2a2
 	github.com/skycoin/skycoin v0.26.0
