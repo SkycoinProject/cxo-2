@@ -54,7 +54,7 @@ services:
       - ./content/node2-content1.txt:/content/node2-content1.txt
       - ./content/node2-content1-version2.txt:/content/node2-content1-version2.txt
       - ./runners/node2.json:/runner-config.json
-      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
+    command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
     
   node-3:
     build: .
@@ -74,7 +74,7 @@ services:
       - ./content/node3-content2:/content/node3-content2
       - ./content/node3-content2-version2:/content/node3-content2-version2
       - ./runners/node3.json:/runner-config.json
-      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
+    command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
 
   node-4:
     build: .
@@ -91,7 +91,7 @@ services:
       - ./keypairs/node-4.txt:/root/.cxo-node/keys.txt
       - ./files/node-4:/root/cxo-file-sharing
       - ./runners/node4.json:/runner-config.json
-      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
+    command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
 
   node-5:
     build: .
@@ -109,4 +109,4 @@ services:
       - ./files/node-5:/root/cxo-file-sharing
       - ./content/empty:/content/empty
       - ./runners/node5.json:/runner-config.json
-      command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'
+    command: /bin/sh -c 'cxo-node & cxo-file-sharing & test-runner'

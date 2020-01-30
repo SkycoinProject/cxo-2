@@ -8,12 +8,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
 
 const (
 	defaultConfigPath = "/runner-config.json"
+	filesPath         = "files"
 )
 
 func main() {
@@ -22,6 +25,10 @@ func main() {
 	waitOnNodeToBeUp()
 
 	runCommands(conf)
+
+	if conf.FilesToAssert != nil && len(conf.FilesToAssert) > 0 {
+		checkFiles(conf.FilesToAssert)
+	}
 }
 
 func readConfig(path string) config {
@@ -210,8 +217,74 @@ func copyFile(source string, dest string) (err error) {
 	return
 }
 
+func checkFiles(files []string) {
+	fmt.Println("Checking test output files and directories...")
+	for _, file := range files {
+		splited := strings.Split(file, ".")
+		if len(splited) == 1 {
+			if checkDirExistance(splited[0]) == false {
+				fmt.Printf("WARNING : Directory with name %s does not exists\n", splited[0])
+			}
+		} else if len(splited) == 2 {
+			if checkFileExistance(splited[0], splited[1], "", false) == false {
+				fmt.Printf("WARNING : File with name %s does not exists in directory %s\n", splited[1], splited[0])
+			}
+		} else if len(splited) == 3 {
+			if checkFileExistance(splited[0], splited[1], splited[2], true) == false {
+				fmt.Printf("WARNING : File with name %s in directory %s does not have correct content\n", splited[1], splited[0])
+			}
+		} else {
+			fmt.Printf("WARNING : Format of input configuration is not correct\n")
+		}
+	}
+}
+
+func checkFileExistance(directoryName string, fileName string, content string, checkContent bool) bool {
+	// check if the source dir exist
+	inputPath := filepath.Join(filesPath, directoryName, string(fileName+".txt"))
+	src, err := os.Stat(inputPath)
+	if err != nil {
+		return false
+	}
+
+	// check if the source is directory
+	if src.IsDir() {
+		return false
+	}
+
+	if checkContent {
+		fileContent := readContent(inputPath)
+		if runtime.GOOS == "windows" {
+			fileContent = strings.TrimRight(fileContent, "\r\n")
+		} else {
+			fileContent = strings.TrimRight(fileContent, "\n")
+		}
+		if strings.Compare(content, fileContent) != 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func checkDirExistance(name string) bool {
+	// check if the source dir exist
+	src, err := os.Stat(filepath.Join(filesPath, name))
+	if err != nil {
+		return false
+	}
+
+	// check if the source is indeed a directory or not
+	if !src.IsDir() {
+		return false
+	}
+
+	return true
+}
+
 type config struct {
-	Commands []command `json:"commands"`
+	Commands      []command `json:"commands"`
+	FilesToAssert []string  `json:"assert"`
 }
 
 type command struct {

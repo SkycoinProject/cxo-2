@@ -20,5 +20,10 @@
             ],
             "sleepInSeconds": 325
         }
+    ],
+
+    "assert": [
+        "node-1",
+        "node-1.node2-content1"
     ]
 }
