@@ -1,0 +1,25 @@
+{
+    "commands": [
+        {
+            "actions": [
+                "publish",
+                "/content/node3-content1.txt"
+            ],
+            "sleepInSeconds": 30
+        },
+        {
+            "actions": [
+                "publish",
+                "/content/node3-content2"
+            ],
+            "sleepInSeconds": 40
+        },
+        {
+            "actions": [
+                "publish",
+                "/content/node3-content2-version2"
+            ],
+            "sleepInSeconds": 325
+        }                
+    ]
+}

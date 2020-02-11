@@ -26,7 +26,7 @@ const (
 	appRootFolderName   = ".cxo-node"
 	keysFileName        = "keys.txt"
 	configFileName      = "cxo-node-config.yml"
-	defaultDiscoveryURL = "http://dmsg.discovery.skywire.skycoin.com"
+	defaultDiscoveryURL = "http://localhost:9090" //http://dmsg.discovery.skywire.skycoin.com
 	defaultTrackerURL   = "dmsg://036cbf1297c2433303909674e1bc25ce341ec1c16012ba28a265066847960e2514:8084"
 	serverPort          = uint16(8083)
 )

@@ -105,7 +105,7 @@ func (t TrackerClient) GetNewSequenceNumber(publicKey string) (uint64, error) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return maxSeq, fmt.Errorf("get next sequence request failed due to error: %s", err)
+		return maxSeq, fmt.Errorf("get next sequence reading body failed due to error: %s", err)
 	}
 	maxSeq = binary.BigEndian.Uint64(body)
 
