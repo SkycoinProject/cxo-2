@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,7 +10,9 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	local := flag.Bool("local", false, "enables node to run from the path it's been started from")
+	flag.Parse()
+	cfg := config.LoadConfig(local)
 
 	cxoNodeCLI, err := cli.NewCLI(cfg)
 	if err != nil {
