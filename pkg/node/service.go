@@ -14,7 +14,6 @@ import (
 	"github.com/SkycoinPro/cxo-2-node/pkg/model"
 	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
-	"github.com/SkycoinProject/dmsg/cipher"
 	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
 	log "github.com/sirupsen/logrus"
 )
@@ -100,8 +99,7 @@ func (s *Service) requestData(rootHash model.RootHash, isRetry bool) {
 		return
 	}
 
-	sPK, sSK := cipher.GenerateKeyPair()
-	client := dmsghttp.DMSGClient(s.config.Discovery, sPK, sSK)
+	client := dmsghttp.DMSGClient(s.config.Discovery, s.config.PubKey, s.config.SecKey)
 
 	if err := s.retrieveHeaders(client, rootHash, rootHash.ObjectHeaderHash); err != nil {
 		fmt.Printf("retrieveing headers failed due to error: %v", err)

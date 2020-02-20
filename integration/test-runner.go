@@ -73,8 +73,8 @@ func runCommands(conf config) {
 			}
 
 			if command.Actions[0] == "subscribe" {
-				fmt.Println("running commands: cxo-node ", command.Actions)
-				cmd := exec.Command("cxo-node", command.Actions...)
+				fmt.Println("running commands: cxo-node-cli ", command.Actions)
+				cmd := exec.Command("cxo-node-cli", command.Actions...)
 				if err := cmd.Run(); err != nil {
 					log.Fatal(err)
 				}
