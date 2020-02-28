@@ -35,9 +35,10 @@ const (
 func LoadConfig(local *bool) Config {
 	var appRootFolderPath = ""
 	if *local == true {
-		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		//retrieve working dir
+		dir, err := os.Getwd()
 		if err != nil {
-			processError("unable to read environment variable for folder from which node is running", err)
+			processError("unable to retrieve working directory from which node is running", err)
 		}
 		appRootFolderPath = filepath.Join(dir, appRootFolderName)
 	} else {
@@ -46,6 +47,13 @@ func LoadConfig(local *bool) Config {
 			processError("unable to find home directory", err)
 		}
 		appRootFolderPath = filepath.Join(homeDir, appRootFolderName)
+	}
+
+	//create root dir if not exist
+	if _, err := os.Stat(appRootFolderPath); os.IsNotExist(err) {
+		if errDir := os.Mkdir(appRootFolderPath, os.ModePerm); errDir != nil {
+			processError("error creating cxo root directory.", errDir)
+		}
 	}
 
 	keysFilePath := filepath.Join(appRootFolderPath, keysFileName)
