@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/config"
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/config"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	"github.com/SkycoinProject/dmsg/cipher"
 )

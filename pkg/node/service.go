@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/errors"
+	"github.com/SkycoinProject/cxo-2/pkg/errors"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/config"
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
-	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
+	"github.com/SkycoinProject/cxo-2/pkg/config"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/node/data"
 	dmsghttp "github.com/SkycoinProject/dmsg-http"
 	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
 	log "github.com/sirupsen/logrus"

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

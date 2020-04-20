@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/go-homedir"
 	"github.com/skycoin/skycoin/src/cipher"

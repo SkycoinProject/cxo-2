@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/cli/client"
-	"github.com/SkycoinPro/cxo-2-node/pkg/config"
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/cli/client"
+	"github.com/SkycoinProject/cxo-2/pkg/config"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
 	dmsgcipher "github.com/SkycoinProject/dmsg/cipher"
 	"github.com/spf13/cobra"
 )

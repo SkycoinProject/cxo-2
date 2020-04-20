@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/config"
-	"github.com/SkycoinPro/cxo-2-node/pkg/node"
-	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
+	"github.com/SkycoinProject/cxo-2/pkg/config"
+	"github.com/SkycoinProject/cxo-2/pkg/node"
+	"github.com/SkycoinProject/cxo-2/pkg/node/data"
 )
 
 func main() {

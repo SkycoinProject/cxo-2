@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/cli"
-	"github.com/SkycoinPro/cxo-2-node/pkg/config"
+	"github.com/SkycoinProject/cxo-2/pkg/cli"
+	"github.com/SkycoinProject/cxo-2/pkg/config"
 )
 
 func main() {

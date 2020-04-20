@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/errors"
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
-	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
+	"github.com/SkycoinProject/cxo-2/pkg/errors"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/node/data"
 	"github.com/gin-gonic/gin"
 )
 
