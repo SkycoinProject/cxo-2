@@ -3,7 +3,7 @@ package data
 import (
 	"time"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
 )
 
 type rootHashDAO struct {

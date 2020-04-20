@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/cli/client"
-	"github.com/SkycoinPro/cxo-2-node/pkg/config"
+	"github.com/SkycoinProject/cxo-2/pkg/cli/client"
+	"github.com/SkycoinProject/cxo-2/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

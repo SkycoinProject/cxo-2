@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/errors"
+	"github.com/SkycoinProject/cxo-2/pkg/errors"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/model"
+	"github.com/SkycoinProject/cxo-2/pkg/model"
 	storm "github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
 	log "github.com/sirupsen/logrus"

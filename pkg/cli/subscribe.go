@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/SkycoinPro/cxo-2-node/pkg/cli/client"
+	"github.com/SkycoinProject/cxo-2/pkg/cli/client"
 	"github.com/spf13/cobra"
 )
 
