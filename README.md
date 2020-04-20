@@ -1,6 +1,8 @@
 # CXO 2.0 Node & CLI
 
-This repo contains the CXO 2.0 Node and CLI. These tools allow you to make use of the CXO 2.0 Tracker.
+This repo contains the CXO 2.0 Node and CLI. These tools allow you to make use of the CXO 2.0 network and register/communicate with the CXO 2.0 Tracker, hosted at cxo.skycoin.com. 
+
+The following lines describe the process to install the base CXO Node. If you want to share files or directories, or download feed updates you should also install the example file sharing app, which utilizes CXO to perform file sharing tasks. The Readme for file sharing can be found [here](/example/cxo-file-sharing/README.md "File Sharing Readme"). 
 
 ## Installation
 
