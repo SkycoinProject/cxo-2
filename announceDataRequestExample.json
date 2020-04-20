@@ -1,0 +1,37 @@
+{
+  "rootHash": {
+    "publisher": "037eb5add4511ac506ecc8c0093a1f3c121ddf78292a49b13187310aa8e7ec9e3f",
+    "signature": "ef54c25dc888228980eb10c7138dac18d38e16074f4482b31c8bc06eeb9372052b1fa36172b59fea4b7f23da043286d79186e2b52a591e2d2646c7d7eb425c0300",
+    "sequence": 1
+  },
+  "dataObject": {
+    "header": {
+      "timestamp": "2019-11-01T10:52:26.0182241+01:00",
+      "manifestHash": "aad6b70bb5294376605b9135b5303c3d296830d59df0e552274d8b581eae8927",
+      "manifestSize": 2,
+      "dataHash": "65e7602945c161ef9db7f190b7f90b1587066fad317614ce311bf3170cacc4ae",
+      "dataSize": 13
+    },
+    "manifest": {
+      "length": 2,
+      "objects": [
+        {
+          "index": 0,
+          "hash": "65e7602945c161ef9db7f190b7f90b1587066fad317614ce311bf3170cacc4ae",
+          "size": 13,
+          "recursiveSizeFirstLevel": 13,
+          "recursiveSizeTotal": 13
+        }
+      ],
+      "meta": [
+        "cxo-test.txt"
+      ]
+    },
+    "object": [
+      {
+        "length": 13,
+        "data": "Q1hPIFNISVQgVEVTVA=="
+      }
+    ]
+  }
+}

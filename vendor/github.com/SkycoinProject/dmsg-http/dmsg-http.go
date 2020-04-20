@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/skycoin/dmsg/cipher"
-	"github.com/skycoin/dmsg/disc"
+	"github.com/SkycoinProject/dmsg/cipher"
+	"github.com/SkycoinProject/dmsg/disc"
 )
 
 // DefaultDMSGClient creates http Client using default discovery service
@@ -18,9 +18,10 @@ func DefaultDMSGClient(pubKey cipher.PubKey, secKey cipher.SecKey) *http.Client 
 // Returned client is using dmsg transport protocol instead of tcp for establishing connection
 func DMSGClient(discovery disc.APIClient, pubKey cipher.PubKey, secKey cipher.SecKey) *http.Client {
 	transport := DMSGTransport{
-		Discovery: discovery,
-		PubKey:    pubKey,
-		SecKey:    secKey,
+		Discovery:  discovery,
+		PubKey:     pubKey,
+		SecKey:     secKey,
+		RetryCount: 20,
 	}
 
 	return &http.Client{

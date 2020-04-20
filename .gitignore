@@ -1,3 +1,10 @@
 # Editor specific files
 .idea/
 .vscode/
+
+# BoltDb and lock file
+*.db
+*.db.lock
+
+# Local working directory for helper shell scripts and files used in test runs
+sh/**

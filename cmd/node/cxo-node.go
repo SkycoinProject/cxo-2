@@ -1,11 +1,18 @@
 package main
 
 import (
-	"github.com/SkycoinPro/cxo-2-node/src/config"
-	"github.com/SkycoinPro/cxo-2-node/src/node"
+	"flag"
+
+	"github.com/SkycoinPro/cxo-2-node/pkg/config"
+	"github.com/SkycoinPro/cxo-2-node/pkg/node"
+	"github.com/SkycoinPro/cxo-2-node/pkg/node/data"
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	local := flag.Bool("local", false, "enables node to run from the path it's been started from")
+	flag.Parse()
+	cfg := config.LoadConfig(local)
+	tearDown := data.Init()
+	defer tearDown()
 	node.NewService(cfg).Run()
 }

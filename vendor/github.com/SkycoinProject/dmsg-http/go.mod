@@ -1,9 +1,11 @@
-module github.com/skycoin/dmsg-http
+module github.com/SkycoinProject/dmsg-http
 
-go 1.12
+go 1.13
 
 require (
-	github.com/skycoin/dmsg v0.0.0-20190822004541-d6e96b044ed6
-	github.com/skycoin/skycoin v0.26.0
-	github.com/stretchr/testify v1.3.0
+	github.com/SkycoinProject/dmsg v0.0.0-20200127093622-ba9543931922
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/stretchr/testify v1.4.0
+	golang.org/x/net v0.0.0-20191204025024-5ee1b9f4859a
 )

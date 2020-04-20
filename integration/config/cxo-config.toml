@@ -1,0 +1,29 @@
+[server]
+ip = "0.0.0.0"
+port = 8087
+
+[dmsg-server]
+port = 8084
+discoveryURL = "http://dmsg.discovery.skywire.cc"
+
+[bolt-db]
+filename = "/cxo-tracker/cxo.db"
+
+[keys]
+filename = "/cxo-tracker/keys.txt"
+
+[c0rs]
+allowed-origins = [
+    "*"
+]
+allowed-headers = [
+    "Content-Type",
+    "Authorization",
+    "Origin"
+]
+allowed-methods = [
+    "GET",
+    "POST"
+]
+allow-all = false
+max-age = "12h"
